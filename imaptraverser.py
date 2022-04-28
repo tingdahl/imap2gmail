@@ -19,7 +19,11 @@ class ImapMessageID:
 
 class ImapCredentials:
 
-    def __init__(self, filename):
+    _host = ""
+    _user = ""
+    _password = ""
+
+    def readFile(self, filename):
         f = open(filename,)
         input = json.load(f)
         f.close()
