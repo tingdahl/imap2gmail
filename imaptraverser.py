@@ -1,4 +1,5 @@
 import json
+import pickle
 from imapclient import IMAPClient
 import logging
 
@@ -16,6 +17,30 @@ class ImapMessageID:
             "folder": self.folder,
             "id": self.id,
         }.items()
+
+class ImapMessageIDList:
+    def __init__(self):
+        self.list = []
+
+    def contains(self, checkid):
+        for listid in self.list:
+            if listid.id == checkid.id and listid.folder==checkid.folder:
+                return True
+
+        return False
+
+    def load(self,filename):
+        file =  open(filename, 'rb')
+
+        self.list = pickle.load( file )
+        file.close()
+
+    def write(self,filename):
+        file =  open(filename, 'wb')
+
+        pickle.dump( self.list, file )
+        file.close()
+
 
 class ImapCredentials:
 

@@ -4,3 +4,5 @@ imap_credentials.json
 
 *.pyc
 *.sw?
+
+cache_file

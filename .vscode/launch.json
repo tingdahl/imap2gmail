@@ -11,7 +11,7 @@
             "program": "imap2gmail.py",
             "console": "integratedTerminal",
             "justMyCode": true,
-            "args":["--imap_credentials_file", "imap_credentials.json"]
+            "args":["--imap_credentials_file", "imap_credentials.json", "--google_credentials", "gmail_credentials.json", "--cache_file", "cache_file"]
         }
     ]
 }

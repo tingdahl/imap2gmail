@@ -1,7 +1,9 @@
 # List number of messages in INBOX folder
 # and print details of the messages that are not deleted
 
+import pickle
 import imaptraverser
+import gmailclient
 import logging
 import argparse
 
@@ -15,6 +17,10 @@ parser.add_argument("--imap_host")
 parser.add_argument("--imap_user")
 parser.add_argument("--imap_password")
 parser.add_argument("--imap_credentials_file" )
+
+parser.add_argument("--google_credentials" )
+
+parser.add_argument("--cache_file" )
 
 args = parser.parse_args()
 
@@ -39,9 +45,26 @@ if imapcredentials.isOK()==False:
     exit(1)
 
 traverser = imaptraverser.ImapTraverser( imapcredentials )
+gmailclient = gmailclient.GMailClient( args.google_credentials )
+
+messagecache = imaptraverser.ImapMessageIDList()
+cachechange = False
+
+if args.cache_file:
+    messagecache.load( args.cache_file )
 
 while traverser.nextMessage():
-    logging.info(  f"Processing message {traverser.currentMessageIdx()+1} of {traverser.nrMessagesInFolder()} (UID: {traverser.currentMessageID().id}) in folder {traverser.currentFolderIdx()+1} of {traverser.nrFolders()}: {traverser.currentFolder()}")
+    messageid = traverser.currentMessageID()
+    if messagecache.contains( messageid )==False:
+
+        logging.info(  f"Processing message {traverser.currentMessageIdx()+1} of {traverser.nrMessagesInFolder()} (UID: {traverser.currentMessageID().id}) in folder {traverser.currentFolderIdx()+1} of {traverser.nrFolders()}: {traverser.currentFolder()}")
+        messagecache.list.append( messageid )
+        cachechange = True
+    
+
+if args.cache_file and cachechange:
+    messagecache.write( args.cache_file )
+   
 
 
 #        for msgid, data in response.items():

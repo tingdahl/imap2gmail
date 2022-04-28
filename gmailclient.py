@@ -1,6 +1,8 @@
 from __future__ import print_function
 
+
 import os.path
+import logging
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -12,45 +14,45 @@ from googleapiclient.errors import HttpError
 SCOPES = ['https://www.googleapis.com/auth/gmail.readonly']
 
 
-def main():
-    """Shows basic usage of the Gmail API.
-    Lists the user's Gmail labels.
-    """
-    creds = None
-    # The file gmail_token.json stores the user's access and refresh tokens, and is
-    # created automatically when the authorization flow completes for the first
-    # time.
-    if os.path.exists('gmail_token.json'):
-        creds = Credentials.from_authorized_user_file('gmail_token.json', SCOPES)
-    # If there are no (valid) credentials available, let the user log in.
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file(
-                'gmail_credentials.json', SCOPES)
-            creds = flow.run_local_server(port=0)
-        # Save the credentials for the next run
-        with open('gmail_token.json', 'w') as token:
-            token.write(creds.to_json())
+class GMailClient:
+    TOKENFILE = 'gmail_token.json'
 
-    try:
-        # Call the Gmail API
-        service = build('gmail', 'v1', credentials=creds)
-        results = service.users().labels().list(userId='me').execute()
-        labels = results.get('labels', [])
-
-        if not labels:
-            print('No labels found.')
+    def __init__(self,credentialsfile):
+        if self._loadCredentials( credentialsfile )==False:
             return
-        print('Labels:')
-        for label in labels:
-            print(label['name'])
 
-    except HttpError as error:
-        # TODO(developer) - Handle errors from gmail API.
-        print(f'An error occurred: {error}')
+        try:
+            self._service = build('gmail', 'v1', credentials=self._creds)
+        except HttpError as error:
+            # TODO(developer) - Handle errors from gmail API.
+            logging.error(f'An error occurred: {error}')
+
+    def __del__(self):
+        self._writeToken()
 
 
-if __name__ == '__main__':
-    main()
+    def _loadCredentials(self,credentialsfile):
+        self._creds = None
+        if os.path.exists( self.TOKENFILE ):
+            self._creds = Credentials.from_authorized_user_file(self.TOKENFILE, SCOPES)
+
+        if not self._creds:
+            flow = InstalledAppFlow.from_client_secrets_file(
+                    credentialsfile, SCOPES)
+            self._creds = flow.run_local_server(port=0)
+
+        return self._creds
+
+            
+
+    def _refreshToken(self):
+        if self._creds and self._creds.expired and self._creds.refresh_token:
+            self._creds.refresh(Request())
+
+        return self._creds and self._creds.valid
+
+
+    def _writeToken(self):
+        # Save the credentials for the next run
+        with open(self.TOKENFILE, 'w') as token:
+            token.write(self._creds.to_json())
