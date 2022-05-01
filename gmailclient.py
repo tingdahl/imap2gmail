@@ -11,7 +11,10 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
 # If modifying these scopes, delete the file token.json.
-SCOPES = ['https://www.googleapis.com/auth/gmail.readonly']
+SCOPES = ['https://www.googleapis.com/auth/gmail.readonly',  
+        'https://www.googleapis.com/auth/gmail.labels',
+        'https://www.googleapis.com/auth/gmail.insert',
+        'https://www.googleapis.com/auth/gmail.modify']
 
 class GMailLabel:
     name = '';
@@ -29,6 +32,8 @@ class GMailLabels:
         #TODO Map known folders (Inbox, Junk, Sent, Draft, ....)
         for label in self.labels:
             if label.IMAPfolder ==imapfolder:
+                return label
+            if label.name == imapfolder:
                 return label
 
         return None
@@ -105,7 +110,7 @@ class GMailClient:
             except Exception as error:
                 logging.error(f"An error occurred while creating label {folder}: {error}")
 
-            self._labels.append( GMailLabel( folder, folder, result['id']))
+            self._labels.labels.append( GMailLabel( folder, folder, result['id']))
 
     def _loadCredentials(self,credentialsfile):
         self._creds = None
