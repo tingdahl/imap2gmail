@@ -1,7 +1,6 @@
 # List number of messages in INBOX folder
 # and print details of the messages that are not deleted
 
-import pickle
 import imaptraverser
 import gmailclient
 import logging
@@ -46,6 +45,8 @@ if imapcredentials.isOK()==False:
 
 traverser = imaptraverser.ImapTraverser( imapcredentials )
 gmailclient = gmailclient.GMailClient( args.google_credentials )
+gmailclient.loadLabels()
+gmailclient.addImapFolders( traverser.getFolders() )
 
 messagecache = imaptraverser.ImapMessageIDList()
 cachechange = False

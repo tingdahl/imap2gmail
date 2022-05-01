@@ -108,6 +108,9 @@ class ImapTraverser:
         except:
             logging.error( "Exception cought when logging out from IMAP server.")
 
+    def getFolders(self):
+        return self._folders
+
     def nrFolders(self):
         return len(self._folders)
 
