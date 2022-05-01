@@ -1,5 +1,5 @@
 import json
-import pickle
+import os
 from imapclient import IMAPClient
 import logging
 
@@ -29,16 +29,32 @@ class ImapMessageIDList:
 
         return False
 
-    def load(self,filename):
-        file =  open(filename, 'rb')
 
-        self.list = pickle.load( file )
-        file.close()
+    def load(self,filename):
+        if os.path.exists( filename ):
+            file =  open(filename, 'rb')
+
+            importlist = []
+            try:
+                importlist = json.load( file )
+            except:
+                logging.error("Could not read cache file.")
+                self.list = []
+
+            file.close()
+
+            for id in importlist:
+                self.list.append( ImapMessageID(id['folder'],id['id'] ))
+
+            logging.info(f"Loaded {len(self.list)} cache items from {filename}.")
 
     def write(self,filename):
-        file =  open(filename, 'wb')
+        file =  open(filename, 'w')
 
-        pickle.dump( self.list, file )
+        json_string = json.dumps([ob.__dict__ for ob in self.list])
+
+        file.write( json_string )
+
         file.close()
 
 
@@ -70,7 +86,13 @@ class ImapCredentials:
 class ImapTraverser:
     def __init__( self, credentials, criteria="ALL" ):
         self._criteria = criteria
-        self._client = IMAPClient( credentials.host, ssl=True, use_uid=True )
+
+        try:
+
+            self._client = IMAPClient( credentials.host, ssl=True, use_uid=True )
+        except IMAPClient.Error:
+            logging.critical(f"Cannot connect to IMAP server {IMAPClient.Error}")
+
         self._client.login( credentials.user, credentials.password )
         self._folders = []
         folders = self._client.list_folders()
@@ -81,7 +103,10 @@ class ImapTraverser:
         self._currentMessageIdx = 0
 
     def __del__(self):
-        self._client.logout()
+        try:
+            self._client.logout()
+        except:
+            logging.error( "Exception cought when logging out from IMAP server.")
 
     def nrFolders(self):
         return len(self._folders)
