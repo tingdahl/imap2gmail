@@ -4,6 +4,8 @@ from __future__ import print_function
 import os.path
 import logging
 
+from base64 import urlsafe_b64decode, urlsafe_b64encode
+
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -75,6 +77,7 @@ class GMailClient:
             return
 
         self._labels = GMailLabels()
+        self._unreadlabel = None
         
         for label in labels:
             imapfolder = ''
@@ -89,7 +92,11 @@ class GMailClient:
             elif label['id']=='TRASH':
                 imapfolder = 'Trash' 
 
-            self._labels.labels.append( GMailLabel( label['name'], imapfolder, label['id']))
+            newlabel = GMailLabel( label['name'], imapfolder, label['id'])
+            if label['id']=='UNREAD':
+                self._unreadlabel = newlabel
+
+            self._labels.labels.append( newlabel )
 
 
     def addImapFolders(self,folders):
@@ -111,6 +118,33 @@ class GMailClient:
                 logging.error(f"An error occurred while creating label {folder}: {error}")
 
             self._labels.labels.append( GMailLabel( folder, folder, result['id']))
+
+    def addMessage(self, message, folder ):
+        flags = message[b'FLAGS']
+        messagelabels = []
+
+        seen = False
+        for flag in flags:
+            if flag==b'\\Seen':
+                seen = True
+            
+        if seen==False:
+            messagelabels.append( self._unreadlabel.GMailID )
+         
+        folderlabel = self._labels.findLabel(folder)
+        if folderlabel!=None:
+            messagelabels.append( folderlabel.GMailID )
+
+        message_obj = {'raw': urlsafe_b64encode(message[b'RFC822']).decode(),
+                       'labelIds': messagelabels }
+
+
+        result = self._service.users().messages().insert(
+            userId="me",
+            body=message_obj,internalDateSource='dateHeader'
+            ).execute(num_retries=2)
+
+        return True
 
     def _loadCredentials(self,credentialsfile):
         self._creds = None

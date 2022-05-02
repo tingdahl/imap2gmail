@@ -59,6 +59,13 @@ while traverser.nextMessage():
     if messagecache.contains( messageid )==False:
 
         logging.info(  f"Processing message {traverser.currentMessageIdx()+1} of {traverser.nrMessagesInFolder()} (UID: {traverser.currentMessageID().id}) in folder {traverser.currentFolderIdx()+1} of {traverser.nrFolders()}: {traverser.currentFolder()}")
+        message = traverser.getCurrentMessage()
+        if message==None:
+            logging.error(f"Cannot fetch message UID: {traverser.currentMessageID().id}) in folder {traverser.currentFolderIdx()+1}")
+            continue
+
+        gmailclient.addMessage( message, messageid.folder )
+
         messagecache.list.append( messageid )
         cachechange = True
     
