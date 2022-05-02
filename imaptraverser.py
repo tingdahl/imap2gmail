@@ -76,8 +76,6 @@ class ImapCredentials:
     def isOK(self):
         return self.host!='' and self.password!='' and self.user!=''
 
-
-
 # Traverses an IMAP server with a search criteria (defalut ALL), and 
 #
 # Happy flow is to initiate, and call nextMessage() until it returns False.
@@ -149,12 +147,16 @@ class ImapTraverser:
         return True
 
     def getCurrentMessage(self):
-        response = self._client.fetch(self._messageIds[self._currentMessageIdx], ["ENVELOPE", "FLAGS", "RFC822.SIZE"])
+        msgid = self._messageIds[self._currentMessageIdx]
+        try:
+            response = self._client.fetch(msgid, ["ENVELOPE", "FLAGS", "RFC822"])
 
-        if len(response)==0:
-            return null
-        
-        return response[0]
+            if len(response)==0:
+                return None
+        except:
+                return None
+
+        return response[msgid]
 
 
 
