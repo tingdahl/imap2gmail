@@ -1,6 +1,7 @@
 # List number of messages in INBOX folder
 # and print details of the messages that are not deleted
 
+import datetime
 import imaptraverser
 import gmailclient
 import logging
@@ -17,9 +18,15 @@ parser.add_argument("--imap_user")
 parser.add_argument("--imap_password")
 parser.add_argument("--imap_credentials_file" )
 
-parser.add_argument("--google_credentials" )
+# Google credential file
+parser.add_argument("--google_credentials", help="Credentials file for the application, as downloaded from GCP." )
 
-parser.add_argument("--cache_file" )
+# Cache file
+parser.add_argument("--cache_file", help="File where a list of completed e-mails will be kept" )
+
+parser.add_argument("--include_deleted", help="Should pruned messages be included.")
+parser.add_argument('--start_date',type=lambda s: datetime.datetime.strptime(s, '%Y-%m-%d'),)
+parser.add_argument('--before_date',type=lambda s: datetime.datetime.strptime(s, '%Y-%m-%d'))
 
 args = parser.parse_args()
 
@@ -43,7 +50,15 @@ if imapcredentials.isOK()==False:
     logging.error("Credentials not read")
     exit(1)
 
+
+
 traverser = imaptraverser.ImapTraverser( imapcredentials )
+if args.start_date:
+    traverser.setStartDate( args.start_date )
+
+if args.before_date:
+    traverser.setBeforeDate( args.before_date )
+
 gmailclient = gmailclient.GMailClient( args.google_credentials )
 gmailclient.loadLabels()
 gmailclient.addImapFolders( traverser.getFolders() )
@@ -69,15 +84,6 @@ while traverser.nextMessage():
         messagecache.list.append( messageid )
         cachechange = True
     
-
+#Write completed cache
 if args.cache_file and cachechange:
     messagecache.write( args.cache_file )
-   
-
-
-#        for msgid, data in response.items():
-#            logging.info(f"Pro")
-#            print(
-#                "   ID %d: %d bytes, flags=%s, envelope=%s" % (msgid, data[b"RFC822.SIZE"], data[b"FLAGS"], data[b"ENVELOPE"])
-#            )
-#        return 

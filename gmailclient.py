@@ -78,23 +78,27 @@ class GMailClient:
 
         self._labels = GMailLabels()
         self._unreadlabel = None
+        self._starredlabel = None
         
         for label in labels:
             imapfolder = ''
-            if label['id']=='SENT':
+            labelid = label['id']
+            if labelid=='SENT':
                 imapfolder = 'Sent'
-            elif label['id']=='DRAFT':
+            elif labelid=='DRAFT':
                 imapfolder = 'Drafts'
-            elif label['id']=='INBOX':
+            elif labelid=='INBOX':
                 imapfolder = 'INBOX'
-            elif label['id']=='SPAM':
+            elif labelid=='SPAM':
                 imapfolder = 'Junk'
-            elif label['id']=='TRASH':
+            elif labelid=='TRASH':
                 imapfolder = 'Trash' 
 
-            newlabel = GMailLabel( label['name'], imapfolder, label['id'])
-            if label['id']=='UNREAD':
+            newlabel = GMailLabel( label['name'], imapfolder, labelid)
+            if labelid=='UNREAD':
                 self._unreadlabel = newlabel
+            if labelid=="STARRED":
+                self._starredlabel = newlabel
 
             self._labels.labels.append( newlabel )
 
@@ -119,17 +123,26 @@ class GMailClient:
 
             self._labels.labels.append( GMailLabel( folder, folder, result['id']))
 
+    #Add message to Gmail, with the apropriate labels based on flags and folder
     def addMessage(self, message, folder ):
         flags = message[b'FLAGS']
         messagelabels = []
 
+        #Search for flagged and seen flags, and set labels accordingly
         seen = False
+        flagged = False
+
         for flag in flags:
             if flag==b'\\Seen':
                 seen = True
+            elif flag==b'\\Flagged':
+                flagged = True
             
         if seen==False:
             messagelabels.append( self._unreadlabel.GMailID )
+
+        if flagged==True:
+            messagelabels.append( self._starredlabel.GMailID )
          
         folderlabel = self._labels.findLabel(folder)
         if folderlabel!=None:
@@ -138,11 +151,19 @@ class GMailClient:
         message_obj = {'raw': urlsafe_b64encode(message[b'RFC822']).decode(),
                        'labelIds': messagelabels }
 
+        
+        if self._refreshToken()==False:
+            logging.critical("Refresh token failed.")
 
-        result = self._service.users().messages().insert(
-            userId="me",
-            body=message_obj,internalDateSource='dateHeader'
-            ).execute(num_retries=2)
+        try:
+            result = self._service.users().messages().insert(
+                userId="me",
+                body=message_obj,
+                internalDateSource='dateHeader'
+                ).execute(num_retries=2)
+        except Exception as error:
+            logging.error(f"Could not upload message to GMail: {error}")
+            return False
 
         return True
 

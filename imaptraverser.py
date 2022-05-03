@@ -3,8 +3,6 @@ import os
 from imapclient import IMAPClient
 import logging
 
-from sqlalchemy import null
-
 
 # Defines a message (with a message ID in a folder)
 class ImapMessageID:
@@ -82,8 +80,12 @@ class ImapCredentials:
 # The current message can be fetched from ther server on request.
 #
 class ImapTraverser:
-    def __init__( self, credentials, criteria="ALL" ):
-        self._criteria = criteria
+
+    _includeDeleted = False
+    _startDate = None
+    _beforeDate = None
+
+    def __init__( self, credentials ):
 
         try:
 
@@ -105,6 +107,15 @@ class ImapTraverser:
             self._client.logout()
         except:
             logging.error( "Exception cought when logging out from IMAP server.")
+
+    def includeDeleted(self,includedeleted):
+        self._includeDeleted = includedeleted
+
+    def setStartDate(self,startdate):
+        self._startDate = startdate
+
+    def setBeforeDate(self,beforedate):
+        self._beforDate = beforedate
 
     def getFolders(self):
         return self._folders
@@ -158,11 +169,20 @@ class ImapTraverser:
 
         return response[msgid]
 
-
-
-
-
     def _nextFolder(self):
+
+        criteria = ""
+        if self._includeDeleted==False:
+            criteria += "NOT DELETED"
+
+        if self._startDate!=None:
+            criteria += f" SINCE \"{self._startDate.strftime('%d-%b-%Y')}\""
+
+        if self._beforeDate!=None:
+            criteria += f" BEFORE \"{self._beforeDate.strftime('%d-%b-%Y')}\""
+
+        if len(criteria)==0:
+            criteria.append("ALL")
 
         while True:
             self._currentFolderIdx += 1
@@ -172,7 +192,7 @@ class ImapTraverser:
             logging.info( f"Switching to folder {self.currentFolder()}")
 
             self._client.select_folder( self._folders[self._currentFolderIdx] )
-            self._messageIds = self._client.search( self._criteria )
+            self._messageIds = self._client.search( criteria )
             self._currentMessageIdx = 0
 
             if len(self._messageIds)>0:
