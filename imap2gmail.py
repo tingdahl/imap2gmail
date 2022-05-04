@@ -64,7 +64,6 @@ gmailclient.loadLabels()
 gmailclient.addImapFolders( traverser.getFolders() )
 
 messagecache = imaptraverser.ImapMessageIDList()
-cachechange = False
 
 if args.cache_file:
     messagecache.load( args.cache_file )
@@ -82,8 +81,8 @@ while traverser.nextMessage():
         gmailclient.addMessage( message, messageid.folder )
 
         messagecache.list.append( messageid )
-        cachechange = True
-    
-#Write completed cache
-if args.cache_file and cachechange:
-    messagecache.write( args.cache_file )
+        if args.cache_file:
+            messagecache.write( args.cache_file )
+    else:
+        logging.info( f"Skipping message {traverser.currentMessageIdx()+1} of {traverser.nrMessagesInFolder()} (UID: {traverser.currentMessageID().id}) in folder {traverser.currentFolderIdx()+1} of {traverser.nrFolders()}: {traverser.currentFolder()}")
+
