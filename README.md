@@ -13,10 +13,10 @@ REST API's.
      the imap_credentials.example.json file as a template.
   4. Specify the gmail credentials file. This is the credentials of the application, NOT of the
      GMail account. The credentials file can be obtained int the Google Cloud Platform, under the "API / Create credentials" section. The following scopes must be supported:
-     
+  
          'https://www.googleapis.com/auth/gmail.labels'
          'https://www.googleapis.com/auth/gmail.insert'
-         
+  
      When these credentials are created, point to it with the --google_credentials argument.
   5. To avoid transferring new emails every time, specity the --cache_file. When specified,
      a list of transferred messages will be stored locally. Note, changes to these messages (such as new edits of drafts, changes to flags (read, starred, etc)) will not be updated at subsequal runs.
