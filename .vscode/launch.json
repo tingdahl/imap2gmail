@@ -14,7 +14,7 @@
             "args":["--imap_credentials_file", "imap_credentials.json",
                     "--google_credentials", "gmail_credentials.json",
                     "--cache_file", "cache_file.json",
-                    "--end_date", "2022-03-30"]
+                    "--before_date", "2022-05-01"]
         }
     ]
 }
