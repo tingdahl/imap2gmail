@@ -1,5 +1,6 @@
 import json
 import os
+import socket
 from imapclient import IMAPClient
 import logging
 
@@ -88,14 +89,20 @@ class ImapTraverser:
     def __init__( self, credentials ):
 
         try:
-
             self._client = IMAPClient( credentials.host, ssl=True, use_uid=True )
-        except IMAPClient.Error:
-            logging.critical(f"Cannot connect to IMAP server {IMAPClient.Error}")
+        except (IMAPClient.Error, socket.error) as err:
+            logging.critical(f"Cannot connect to IMAP server: {err}")
 
-        self._client.login( credentials.user, credentials.password )
+        try:
+            self._client.login( credentials.user, credentials.password )
+        except (IMAPClient.Error, socket.error) as err:
+            logging.critical(f"Cannot login to IMAP server: {err}")
         self._folders = []
-        folders = self._client.list_folders()
+        try:
+            folders = self._client.list_folders()
+        except (IMAPClient.Error, socket.error) as err:
+            logging.critical(f"Cannot retrieve IMAP folders: {err}")
+            
         for folder in folders:
             self._folders.append( folder[2] )
 
@@ -105,8 +112,8 @@ class ImapTraverser:
     def __del__(self):
         try:
             self._client.logout()
-        except:
-            logging.error( "Exception cought when logging out from IMAP server.")
+        except (IMAPClient.Error, socket.error) as err:
+            logging.error( f"Exception cought when logging out from IMAP server: {err}")
 
     def includeDeleted(self,includedeleted):
         self._includeDeleted = includedeleted
@@ -115,7 +122,7 @@ class ImapTraverser:
         self._startDate = startdate
 
     def setBeforeDate(self,beforedate):
-        self._beforDate = beforedate
+        self._beforeDate = beforedate
 
     def getFolders(self):
         return self._folders
@@ -164,8 +171,9 @@ class ImapTraverser:
 
             if len(response)==0:
                 return None
-        except:
-                return None
+        except (IMAPClient.Error, socket.error) as err:
+            logging.error(f"Cannot retrieve message: {err}")
+            return None
 
         return response[msgid]
 
@@ -191,8 +199,12 @@ class ImapTraverser:
 
             logging.info( f"Switching to folder {self.currentFolder()}")
 
-            self._client.select_folder( self._folders[self._currentFolderIdx] )
-            self._messageIds = self._client.search( criteria )
+            try:
+                self._client.select_folder( self.currentFolder() )
+                self._messageIds = self._client.search( criteria.strip() )
+            except (IMAPClient.Error, socket.error) as err:
+                logging.error(
+                    f"Cannot switch to folder {self.currentFolder()}: {err}")
             self._currentMessageIdx = 0
 
             if len(self._messageIds)>0:
