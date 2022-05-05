@@ -24,7 +24,8 @@ parser.add_argument("--google_credentials", help="Credentials file for the appli
 # Cache file
 parser.add_argument("--cache_file", help="File where a list of completed e-mails will be kept" )
 
-parser.add_argument("--include_deleted", help="Should pruned messages be included.")
+parser.add_argument("--include_deleted", action='store_const', const=True,
+                     help="Should messaged marked as deleted be included.")
 parser.add_argument('--start_date',type=lambda s: datetime.datetime.strptime(s, '%Y-%m-%d'),)
 parser.add_argument('--before_date',type=lambda s: datetime.datetime.strptime(s, '%Y-%m-%d'))
 
@@ -53,11 +54,15 @@ if imapcredentials.isOK()==False:
 
 
 traverser = imaptraverser.ImapTraverser( imapcredentials )
+
 if args.start_date:
     traverser.setStartDate( args.start_date )
 
 if args.before_date:
     traverser.setBeforeDate( args.before_date )
+
+if args.include_deleted:
+    traverser.includeDeleted( True )
 
 gmailclient = gmailclient.GMailClient( args.google_credentials )
 gmailclient.loadLabels()
