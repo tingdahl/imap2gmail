@@ -13,10 +13,8 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
 # If modifying these scopes, delete the file token.json.
-SCOPES = ['https://www.googleapis.com/auth/gmail.readonly',  
-        'https://www.googleapis.com/auth/gmail.labels',
-        'https://www.googleapis.com/auth/gmail.insert',
-        'https://www.googleapis.com/auth/gmail.modify']
+SCOPES = ['https://www.googleapis.com/auth/gmail.labels',
+        'https://www.googleapis.com/auth/gmail.insert']
 
 class GMailLabel:
     name = '';
@@ -31,7 +29,6 @@ class GMailLabel:
 class GMailLabels:
 
     def findLabel(self,imapfolder):
-        #TODO Map known folders (Inbox, Junk, Sent, Draft, ....)
         for label in self.labels:
             if label.IMAPfolder ==imapfolder:
                 return label
@@ -60,9 +57,6 @@ class GMailClient:
             # TODO(developer) - Handle errors from gmail API.
             logging.error(f'An error occurred: {error}')
 
-    def __del__(self):
-        self._writeToken()
-
     def loadLabels(self):
         try:
             results = self._service.users().labels().list(userId='me').execute()
@@ -79,6 +73,8 @@ class GMailClient:
         self._labels = GMailLabels()
         self._unreadlabel = None
         self._starredlabel = None
+        self._junklabel = None
+        self._trashlabel = None
         
         for label in labels:
             imapfolder = ''
@@ -97,8 +93,13 @@ class GMailClient:
             newlabel = GMailLabel( label['name'], imapfolder, labelid)
             if labelid=='UNREAD':
                 self._unreadlabel = newlabel
-            if labelid=="STARRED":
+            elif labelid=="STARRED":
                 self._starredlabel = newlabel
+            elif labelid=="SPAM":
+                self._junklabel = newlabel
+            elif labelid=="TRASH":
+                self._trashlabel = newlabel
+
 
             self._labels.labels.append( newlabel )
 
@@ -131,18 +132,32 @@ class GMailClient:
         #Search for flagged and seen flags, and set labels accordingly
         seen = False
         flagged = False
+        junk = False
+        deleted = False
 
         for flag in flags:
             if flag==b'\\Seen':
                 seen = True
             elif flag==b'\\Flagged':
                 flagged = True
+            elif flag==b'Junk':
+                junk = True
+            elif flag==b'NonJunk':
+                junk = False
+            elif flag==b'\\Deleted':
+                deleted = True
             
         if seen==False:
             messagelabels.append( self._unreadlabel.GMailID )
 
         if flagged==True:
             messagelabels.append( self._starredlabel.GMailID )
+        
+        if junk==True:
+            messagelabels.append( self._junklabel.GMailID )
+
+        if deleted==True:
+            messagelabels.append( self._trashlabel.GMailID )
          
         folderlabel = self._labels.findLabel(folder)
         if folderlabel!=None:
@@ -156,10 +171,12 @@ class GMailClient:
             logging.critical("Refresh token failed.")
 
         try:
-            result = self._service.users().messages().insert(
+            result = self._service.users().messages().import_(
                 userId="me",
                 body=message_obj,
-                internalDateSource='dateHeader'
+                internalDateSource='dateHeader',
+                processForCalendar=False,
+                neverMarkSpam=True,
                 ).execute(num_retries=2)
         except Exception as error:
             logging.error(f"Could not upload message to GMail: {error}")
@@ -176,6 +193,7 @@ class GMailClient:
             flow = InstalledAppFlow.from_client_secrets_file(
                     credentialsfile, SCOPES)
             self._creds = flow.run_local_server(port=0)
+            self._writeToken()
 
         return self._creds
 
@@ -186,6 +204,8 @@ class GMailClient:
             except:
                 return False
 
+            self._writeToken()
+
         return self._creds and self._creds.valid
 
 
@@ -193,16 +213,3 @@ class GMailClient:
         # Save the credentials for the next run
         with open(self.TOKENFILE, 'w') as token:
             token.write(self._creds.to_json())
-
-
-#try:
-#    message = service.users().messages().modify(userId=user_id,
-#                                                id=msg_id,
-#                                                body=msg_labels).execute()
-#
-#    label_ids = message['labelIds']
-#
-#    logging.debug('Message ID: %s - With Label IDs %s' % (msg_id, label_ids))
-#    return message
-#except errors.HttpError, error:
-#    logging.debug('An error occurred: %s' % error)
