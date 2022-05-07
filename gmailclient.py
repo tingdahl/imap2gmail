@@ -6,8 +6,10 @@ import logging
 
 from base64 import urlsafe_b64decode, urlsafe_b64encode
 
+import httplib2
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
+import google_auth_httplib2
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
@@ -128,6 +130,10 @@ class GMailClient:
     def addMessage(self, message, folder ):
         flags = message[b'FLAGS']
         messagelabels = []
+  
+        folderlabel = self._labels.findLabel(folder)
+        if folderlabel!=None:
+            messagelabels.append( folderlabel.GMailID )
 
         #Search for flagged and seen flags, and set labels accordingly
         seen = False
@@ -153,15 +159,13 @@ class GMailClient:
         if flagged==True:
             messagelabels.append( self._starredlabel.GMailID )
         
-        if junk==True:
-            messagelabels.append( self._junklabel.GMailID )
+        #Don't apply junk/trash if it is already in trash.
+        if folderlabel.GMailID!=self._trashlabel.GMailID:
+            if junk==True:
+                messagelabels.append( self._junklabel.GMailID )
 
-        if deleted==True:
-            messagelabels.append( self._trashlabel.GMailID )
-         
-        folderlabel = self._labels.findLabel(folder)
-        if folderlabel!=None:
-            messagelabels.append( folderlabel.GMailID )
+            if deleted==True:
+                messagelabels.append( self._trashlabel.GMailID )
 
         message_obj = {'raw': urlsafe_b64encode(message[b'RFC822']).decode(),
                        'labelIds': messagelabels }
@@ -171,13 +175,14 @@ class GMailClient:
             logging.critical("Refresh token failed.")
 
         try:
+            http = google_auth_httplib2.AuthorizedHttp( self._creds, http=httplib2.Http() )
             result = self._service.users().messages().import_(
                 userId="me",
                 body=message_obj,
                 internalDateSource='dateHeader',
                 processForCalendar=False,
                 neverMarkSpam=True,
-                ).execute(num_retries=2)
+                ).execute(num_retries=2,http=http)
         except Exception as error:
             logging.error(f"Could not upload message to GMail: {error}")
             return False
