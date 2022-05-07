@@ -3,7 +3,7 @@ from __future__ import print_function
 
 import os.path
 import logging
-
+from ratelimit import limits, RateLimitException, sleep_and_retry
 from base64 import urlsafe_b64decode, urlsafe_b64encode
 
 import httplib2
@@ -18,6 +18,9 @@ from googleapiclient.errors import HttpError
 SCOPES = ['https://www.googleapis.com/auth/gmail.labels',
         'https://www.googleapis.com/auth/gmail.insert']
 
+MAX_CALLS_PER_SECOND=9
+ONE_SECOND = 1
+
 class GMailLabel:
     name = '';
     IMAPfolder = ''
@@ -27,6 +30,7 @@ class GMailLabel:
         self.name = name
         self.IMAPfolder = folder
         self.GMailID = gmailid
+
 
 class GMailLabels:
 
@@ -127,6 +131,8 @@ class GMailClient:
             self._labels.labels.append( GMailLabel( folder, folder, result['id']))
 
     #Add message to Gmail, with the apropriate labels based on flags and folder
+    @sleep_and_retry
+    @limits(calls=MAX_CALLS_PER_SECOND, period=ONE_SECOND)
     def addMessage(self, message, folder ):
         flags = message[b'FLAGS']
         messagelabels = []
