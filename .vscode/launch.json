@@ -13,7 +13,7 @@
             "justMyCode": true,
             "args":["--imap_credentials_file", "imap_credentials.json",
                     "--google_credentials", "gmail_credentials.json",
-                    "--cache_file", "cache_file.json",
+                    "--cache_file", "cache_file",
                     "--before_date", "2022-05-01"]
         }
     ]

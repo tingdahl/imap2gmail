@@ -98,14 +98,6 @@ class ImapTraverser:
         except (IMAPClient.Error, socket.error) as err:
             logging.critical(f"Cannot login to IMAP server: {err}")
         self._folders = []
-        try:
-            folders = self._client.list_folders()
-        except (IMAPClient.Error, socket.error) as err:
-            logging.critical(f"Cannot retrieve IMAP folders: {err}")
-            
-        for folder in folders:
-            self._folders.append( folder[2] )
-
         self._currentFolderIdx = -1
         self._currentMessageIdx = 0
 
@@ -124,8 +116,30 @@ class ImapTraverser:
     def setBeforeDate(self,beforedate):
         self._beforeDate = beforedate
 
+    #Get a list of folders from server.
+    def retrieveFolders(self):
+        try:
+            folders = self._client.list_folders()
+        except (IMAPClient.Error, socket.error) as err:
+            logging.critical(f"Cannot retrieve IMAP folders: {err}")
+            return False
+            
+        for folder in folders:
+            self._folders.append( folder[2] )
+
+        self._currentFolderIdx = -1
+        self._currentMessageIdx = 0
+
+        return True
+
     def getFolders(self):
         return self._folders
+
+    # Set the object to process one single folder
+    def setFolder(self,folder):
+        self._folders = [folder]
+        self._currentFolderIdx = -1
+        self._currentMessageIdx = 0
 
     def nrFolders(self):
         return len(self._folders)
