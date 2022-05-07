@@ -85,6 +85,7 @@ class ImapTraverser:
     _includeDeleted = False
     _startDate = None
     _beforeDate = None
+    _folder = ""
 
     def __init__( self, credentials ):
 
@@ -97,9 +98,8 @@ class ImapTraverser:
             self._client.login( credentials.user, credentials.password )
         except (IMAPClient.Error, socket.error) as err:
             logging.critical(f"Cannot login to IMAP server: {err}")
-        self._folders = []
-        self._currentFolderIdx = -1
-        self._currentMessageIdx = 0
+
+
 
     def __del__(self):
         try:
@@ -119,27 +119,59 @@ class ImapTraverser:
     #Get a list of folders from server.
     def retrieveFolders(self):
         try:
-            folders = self._client.list_folders()
+            imapfolders = self._client.list_folders()
         except (IMAPClient.Error, socket.error) as err:
             logging.critical(f"Cannot retrieve IMAP folders: {err}")
+            return []
+
+        folders = []    
+
+        for folder in imapfolders:
+            folders.append( folder[2] )
+
+        return folders
+
+    def setFolder(self,folder):
+        if folder==self._folder:
+            return True
+
+        logging.info( f"Switching to folder {folder}")
+
+        try:
+            self._client.select_folder( folder )
+        except (IMAPClient.Error, socket.error) as err:
+            logging.error(
+                    f"Cannot switch to folder {folder}: {err}")
             return False
-            
-        for folder in folders:
-            self._folders.append( folder[2] )
 
-        self._currentFolderIdx = -1
-        self._currentMessageIdx = 0
-
+        self._folder = folder
         return True
 
-    def getFolders(self):
-        return self._folders
+        
 
-    # Set the object to process one single folder
-    def setFolder(self,folder):
-        self._folders = [folder]
-        self._currentFolderIdx = -1
-        self._currentMessageIdx = 0
+    def getMessageIds(self):
+        criteria = ""
+        if self._includeDeleted==False:
+            criteria += "NOT DELETED"
+
+        if self._startDate!=None:
+            criteria += f" SINCE \"{self._startDate.strftime('%d-%b-%Y')}\""
+
+        if self._beforeDate!=None:
+            criteria += f" BEFORE \"{self._beforeDate.strftime('%d-%b-%Y')}\""
+
+        if len(criteria)==0:
+            criteria.append("ALL")
+
+        logging.info( f"Searching in {self._folder}")
+        try:
+            messages = self._client.search( criteria.strip() )
+        except (IMAPClient.Error, socket.error) as err:
+            logging.error(
+                    f"Cannot switch to folder {self._folder}: {err}")
+            return []
+        
+        return messages
 
     def nrFolders(self):
         return len(self._folders)
@@ -178,15 +210,14 @@ class ImapTraverser:
         
         return True
 
-    def getCurrentMessage(self):
-        msgid = self._messageIds[self._currentMessageIdx]
+    def loadMessage(self,msgid):
         try:
             response = self._client.fetch(msgid, ["ENVELOPE", "FLAGS", "RFC822"])
 
             if len(response)==0:
                 return None
         except (IMAPClient.Error, socket.error) as err:
-            logging.error(f"Cannot retrieve message: {err}")
+            logging.error(f"Cannot retrieve message {msgid} in folder {self._folder}: {err}")
             return None
 
         return response[msgid]
