@@ -5,7 +5,7 @@ from json.tool import main
 import multiprocessing
 import queue
 import threading
-import imaptraverser
+import imapreader
 import gmailclient
 import logging
 
@@ -28,12 +28,12 @@ class Imap2GMail:
 
         self._imapreaders = []
         for threadidx in range(self._nrThreads):
-            self._imapreaders.append( imaptraverser.ImapReader( self._imapcredentials ) ) 
+            self._imapreaders.append( imapreader.ImapReader( self._imapcredentials ) ) 
 
-        self._initialmessagecache = imaptraverser.ImapMessageIDList()
+        self._initialmessagecache = imapreader.ImapMessageIDList()
         self._initialmessagecache.loadJsonFile( cachefile )
 
-        self._messagecache = imaptraverser.ImapMessageIDList()
+        self._messagecache = imapreader.ImapMessageIDList()
         self._messagecache.loadJsonFile( cachefile )
         self._cachefile = cachefile
 
@@ -70,7 +70,7 @@ class Imap2GMail:
                                                      self._include_deleted)
 
                 for messageid in messageids:
-                    self._messagequeue.put( imaptraverser.ImapMessageID( folder, messageid ))
+                    self._messagequeue.put( imapreader.ImapMessageID( folder, messageid ))
 
             
 

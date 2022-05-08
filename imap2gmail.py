@@ -4,7 +4,7 @@
 import datetime
 import multiprocessing
 import threading
-import imaptraverser
+import imapreader
 import gmailclient
 import logging
 import argparse
@@ -34,7 +34,7 @@ parser.add_argument('--before_date',type=lambda s: datetime.datetime.strptime(s,
 args = parser.parse_args()
 
 #Parse imap creds
-imapcredentials = imaptraverser.ImapCredentials()
+imapcredentials = imapreader.ImapCredentials()
 
 if args.imap_credentials_file:
     imapcredentials.loadJsonFile( args.imap_credentials_file )
