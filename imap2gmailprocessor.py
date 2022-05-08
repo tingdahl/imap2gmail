@@ -31,10 +31,10 @@ class Imap2GMail:
             self._imapclients.append( imaptraverser.ImapTraverser( self._imapcredentials ) ) 
 
         self._initialmessagecache = imaptraverser.ImapMessageIDList()
-        self._initialmessagecache.load( cachefile )
+        self._initialmessagecache.loadJsonFile( cachefile )
 
         self._messagecache = imaptraverser.ImapMessageIDList()
-        self._messagecache.load( cachefile )
+        self._messagecache.loadJsonFile( cachefile )
         self._cachefile = cachefile
 
     def discoverMessages(self):
@@ -86,7 +86,7 @@ class Imap2GMail:
             thread.join()      
 
         if self._cachefile:
-            self._messagecache.write( self._cachefile )
+            self._messagecache.writeJSonFile( self._cachefile )
 
     def processFunction(self,threadidx):
         traverser = self._imapclients[threadidx]
@@ -115,7 +115,7 @@ class Imap2GMail:
             if self._gmailclient.addMessage( imapmessage, message.folder )!=False:
                 self._messagecache.list.append( message )
                 if threadidx==0 and self._cachefile:
-                    self._messagecache.write( self._cachefile )
+                    self._messagecache.writeJSonFile( self._cachefile )
 
         traverser.logout()
 

@@ -17,10 +17,12 @@ class ImapMessageID:
             "id": self.id,
         }.items()
 
+# List of ImapMessageIDs.
 class ImapMessageIDList:
     def __init__(self):
         self.list = []
 
+    # Returns true if checkid exists in the list
     def contains(self, checkid):
         for listid in self.list:
             if listid.id == checkid.id and listid.folder==checkid.folder:
@@ -28,8 +30,8 @@ class ImapMessageIDList:
 
         return False
 
-
-    def load(self,filename):
+    # Load list from json file
+    def loadJsonFile(self,filename):
         if os.path.exists( filename ):
             file =  open(filename, 'rb')
 
@@ -47,7 +49,8 @@ class ImapMessageIDList:
 
             logging.info(f"Loaded {len(self.list)} cache items from {filename}.")
 
-    def write(self,filename):
+    # Write list to json file
+    def writeJSonFile(self,filename):
         file =  open(filename, 'w')
 
         json_string = json.dumps([ob.__dict__ for ob in self.list])
@@ -56,14 +59,14 @@ class ImapMessageIDList:
 
         file.close()
 
-
+# Holds host, user, password for an IMAP server
 class ImapCredentials:
 
-    _host = ""
-    _user = ""
-    _password = ""
+    host = ""
+    user = ""
+    password = ""
 
-    def readFile(self, filename):
+    def loadJsonFile(self, filename):
         f = open(filename,)
         input = json.load(f)
         f.close()
@@ -82,9 +85,6 @@ class ImapCredentials:
 #
 class ImapTraverser:
 
-    _includeDeleted = False
-    _startDate = None
-    _beforeDate = None
     _folder = ""
 
     def __init__( self, credentials ):
@@ -154,54 +154,6 @@ class ImapTraverser:
         
         return messages
 
-    def nrFolders(self):
-        return len(self._folders)
-
-    def logout(self):
-        if self._client==None:
-            return
-
-        try:
-            self._client.logout()
-        except (IMAPClient.Error, socket.error) as err:
-            logging.error( f"Exception cought when logging out from IMAP server: {err}")
-
-        self._client = None
-
-    def currentFolderIdx(self):
-        return self._currentFolderIdx
-
-    def currentFolder(self):
-        if self._currentFolderIdx==-1 or self._currentFolderIdx>=len(self._folders):
-            return ""
-        
-        return self._folders[self._currentFolderIdx]
-
-    def nrMessagesInFolder(self):
-        return len(self._messageIds)
-    
-    def currentMessageIdx(self):
-        return self._currentMessageIdx
-
-    def currentMessageID(self):
-        if self._currentMessageIdx==-1 or self._currentMessageIdx>=len(self._messageIds):
-            return ImapMessageID( "", -1 )
-        
-        return ImapMessageID( self.currentFolder(), self._messageIds[self._currentMessageIdx] )
-
-    def nextMessage(self):
-        #First init
-        if self._currentFolderIdx==-1:
-            if self._nextFolder()==False:
-                return False
-        else: #Not first init, advance
-            self._currentMessageIdx += 1
-            if self._currentMessageIdx>=self.nrMessagesInFolder():
-                if self._nextFolder()==False:
-                    return False
-        
-        return True
-
     def loadMessage(self,msgid):
         try:
             response = self._client.fetch(msgid, ["ENVELOPE", "FLAGS", "RFC822"])
@@ -213,38 +165,14 @@ class ImapTraverser:
             return None
 
         return response[msgid]
+    
+    def logout(self):
+        if self._client==None:
+            return
 
-    def _nextFolder(self):
+        try:
+            self._client.logout()
+        except (IMAPClient.Error, socket.error) as err:
+            logging.error( f"Exception cought when logging out from IMAP server: {err}")
 
-        criteria = ""
-        if self._includeDeleted==False:
-            criteria += "NOT DELETED"
-
-        if self._startDate!=None:
-            criteria += f" SINCE \"{self._startDate.strftime('%d-%b-%Y')}\""
-
-        if self._beforeDate!=None:
-            criteria += f" BEFORE \"{self._beforeDate.strftime('%d-%b-%Y')}\""
-
-        if len(criteria)==0:
-            criteria.append("ALL")
-
-        while True:
-            self._currentFolderIdx += 1
-            if self._currentFolderIdx>=len(self._folders):
-                return False
-
-            logging.info( f"Switching to folder {self.currentFolder()}")
-
-            try:
-                self._client.select_folder( self.currentFolder() )
-                self._messageIds = self._client.search( criteria.strip() )
-            except (IMAPClient.Error, socket.error) as err:
-                logging.error(
-                    f"Cannot switch to folder {self.currentFolder()}: {err}")
-            self._currentMessageIdx = 0
-
-            if len(self._messageIds)>0:
-                break
-
-        return True
+        self._client = None

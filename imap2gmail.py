@@ -10,7 +10,7 @@ import logging
 import argparse
 import imap2gmailprocessor
 
-logging.basicConfig(level=logging.INFO )
+logging.basicConfig( level=logging.INFO )
 
 parser = argparse.ArgumentParser()
 
@@ -37,7 +37,7 @@ args = parser.parse_args()
 imapcredentials = imaptraverser.ImapCredentials()
 
 if args.imap_credentials_file:
-    imapcredentials.readFile( args.imap_credentials_file )
+    imapcredentials.loadJsonFile( args.imap_credentials_file )
 
 else:
     if args.imap_host==False or args.imap_user==False or args.imap_password==False:
