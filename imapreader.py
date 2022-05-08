@@ -163,7 +163,7 @@ class ImapReader:
 
     def loadMessage(self,msgid):
         try:
-            response = self._client.fetch(msgid, ["ENVELOPE", "FLAGS", "RFC822"])
+            response = self._client.fetch(msgid, ["FLAGS", "RFC822"])
 
             if len(response)==0:
                 return None
