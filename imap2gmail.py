@@ -29,6 +29,9 @@ parser.add_argument("--google_credentials", help="Credentials file for the appli
 # Cache file
 parser.add_argument("--cache_file", help="File where a list of completed e-mails will be kept" )
 
+# MT
+parser.add_argument( "--max_threads", help="Maximum number of threads. Default is 16 threads.")
+
 parser.add_argument("--include_deleted", action='store_const', const=True,
                      help="Should messaged marked as deleted be included.")
 parser.add_argument('--start_date',type=lambda s: datetime.datetime.strptime(s, '%Y-%m-%d'),)
@@ -56,7 +59,13 @@ if imapcredentials.isOK()==False:
     logging.error("Credentials not read")
     exit(1)
 
-processor = imap2gmailprocessor.Imap2GMail( imapcredentials, args.google_credentials, multiprocessing.cpu_count()*2,
+maxnrthreads = 16
+if args.max_threads:
+    maxnrthreads = int(args.max_threads)
+
+nrthreads = min(multiprocessing.cpu_count()*2,maxnrthreads)
+
+processor = imap2gmailprocessor.Imap2GMailProcessor( imapcredentials, args.google_credentials, nrthreads,
                  args.start_date, args.before_date,args.include_deleted,
                  args.cache_file )
 
