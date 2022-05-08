@@ -1,3 +1,8 @@
+# 
+# Copyright © 2022 Tingdahl ICT Management
+# Licenced under the MIT licence, see license.md
+# 
+
 from __future__ import print_function
 
 

@@ -1,3 +1,8 @@
+# 
+# Copyright © 2022 Tingdahl ICT Management
+# Licenced under the MIT licence, see license.md
+# 
+
 # List number of messages in INBOX folder
 # and print details of the messages that are not deleted
 

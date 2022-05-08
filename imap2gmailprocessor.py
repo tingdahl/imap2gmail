@@ -1,5 +1,8 @@
+# 
+# Copyright © 2022 Tingdahl ICT Management
+# Licenced under the MIT licence, see license.md
+# 
 
-from json.tool import main
 import multiprocessing
 import queue
 import threading
@@ -10,7 +13,7 @@ import logging
 # Reads data from an IMAP server and imports them into GMail. IMAP folders
 # becomes GMail labels.
 
-class Imap2GMail:
+class Imap2GMailProcessor:
     def __init__(self, imap_credentials, google_credentials, nrthreads,
                  start_date, before_date,include_deleted, cachefile  ):
         self._imapcredentials = imap_credentials
