@@ -3,18 +3,17 @@
 # Licenced under the MIT licence, see license.md
 # 
 
-from __future__ import print_function
-
-
 import os.path
 import logging
+import google_auth_httplib2
+import httplib2
+
 from ratelimit import limits, RateLimitException, sleep_and_retry
 from base64 import urlsafe_b64decode, urlsafe_b64encode
 
-import httplib2
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
-import google_auth_httplib2
+
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
