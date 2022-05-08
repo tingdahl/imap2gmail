@@ -26,9 +26,9 @@ class Imap2GMail:
         self._gmailclient = gmailclient.GMailClient( google_credentials )
         self._gmailclient.loadLabels()
 
-        self._imapclients = []
+        self._imapreaders = []
         for threadidx in range(self._nrThreads):
-            self._imapclients.append( imaptraverser.ImapTraverser( self._imapcredentials ) ) 
+            self._imapreaders.append( imaptraverser.ImapReader( self._imapcredentials ) ) 
 
         self._initialmessagecache = imaptraverser.ImapMessageIDList()
         self._initialmessagecache.loadJsonFile( cachefile )
@@ -38,7 +38,7 @@ class Imap2GMail:
         self._cachefile = cachefile
 
     def discoverMessages(self):
-        folders = self._imapclients[0].retrieveFolders()
+        folders = self._imapreaders[0].retrieveAllFolders()
         self._gmailclient.addImapFolders( folders )
 
         for folder in folders:
@@ -57,7 +57,7 @@ class Imap2GMail:
 
 
     def discoverFolder(self,threadidx):
-        traverser = self._imapclients[threadidx]
+        traverser = self._imapreaders[threadidx]
 
         while True:
             try:
@@ -65,8 +65,8 @@ class Imap2GMail:
             except:
                 break
 
-            if traverser.setFolder( folder ):
-                messageids = traverser.getMessageIds(self._start_date,self._before_date,
+            if traverser.setCurrentFolder( folder ):
+                messageids = traverser.searchMessages(self._start_date,self._before_date,
                                                      self._include_deleted)
 
                 for messageid in messageids:
@@ -89,7 +89,7 @@ class Imap2GMail:
             self._messagecache.writeJSonFile( self._cachefile )
 
     def processFunction(self,threadidx):
-        traverser = self._imapclients[threadidx]
+        traverser = self._imapreaders[threadidx]
         
         while True:
             try:
@@ -103,7 +103,8 @@ class Imap2GMail:
                 logging.info( f"Skipping message {messageidx} of {self._nrMessages} (UID: {message.id} in folder {message.folder})")
                 continue
 
-            traverser.setFolder( message.folder )
+            if traverser.setCurrentFolder( message.folder )==False:
+                continue
 
             logging.info(  f"Processing message {messageidx} of {self._nrMessages} (UID: {message.id} in folder {message.folder})")
             imapmessage = traverser.loadMessage( message.id )

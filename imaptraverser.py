@@ -78,12 +78,14 @@ class ImapCredentials:
     def isOK(self):
         return self.host!='' and self.password!='' and self.user!=''
 
-# Traverses an IMAP server with a search criteria (defalut ALL), and 
+# Opens connection to an IMAP server, and provides limited services
+# to read data from it 
 #
-# Happy flow is to initiate, and call nextMessage() until it returns False.
-# The current message can be fetched from ther server on request.
-#
-class ImapTraverser:
+# Happy flow is to initiate, and call retrieveFolders, traverse over all folders
+# and read messages in those folders.
+# At the end, log out from the server.
+
+class ImapReader:
 
     _folder = ""
 
@@ -100,7 +102,7 @@ class ImapTraverser:
             logging.critical(f"Cannot login to IMAP server: {err}")
 
     #Get a list of folders from server.
-    def retrieveFolders(self):
+    def retrieveAllFolders(self):
         try:
             imapfolders = self._client.list_folders()
         except (IMAPClient.Error, socket.error) as err:
@@ -114,7 +116,7 @@ class ImapTraverser:
 
         return folders
 
-    def setFolder(self,folder):
+    def setCurrentFolder(self,folder):
         if folder==self._folder:
             return True
 
@@ -130,7 +132,9 @@ class ImapTraverser:
         self._folder = folder
         return True
 
-    def getMessageIds(self,startdate,beforedate,includedeleted):
+    # Gets a list of all message ids in the current folder.
+
+    def searchMessages(self,startdate,beforedate,includedeleted):
         criteria = ""
         if includedeleted==False:
             criteria += "NOT DELETED"
@@ -149,10 +153,13 @@ class ImapTraverser:
             messages = self._client.search( criteria.strip() )
         except (IMAPClient.Error, socket.error) as err:
             logging.error(
-                    f"Cannot switch to folder {self._folder}: {err}")
+                    f"Cannot search messages in folder {self._folder}: {err}")
             return []
         
         return messages
+
+    # Loads a message in current folder. Returns an array of Envelope, Flags, and RFC822
+    # message
 
     def loadMessage(self,msgid):
         try:
