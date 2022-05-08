@@ -99,23 +99,6 @@ class ImapTraverser:
         except (IMAPClient.Error, socket.error) as err:
             logging.critical(f"Cannot login to IMAP server: {err}")
 
-
-
-    def __del__(self):
-        try:
-            self._client.logout()
-        except (IMAPClient.Error, socket.error) as err:
-            logging.error( f"Exception cought when logging out from IMAP server: {err}")
-
-    def includeDeleted(self,includedeleted):
-        self._includeDeleted = includedeleted
-
-    def setStartDate(self,startdate):
-        self._startDate = startdate
-
-    def setBeforeDate(self,beforedate):
-        self._beforeDate = beforedate
-
     #Get a list of folders from server.
     def retrieveFolders(self):
         try:
@@ -147,18 +130,16 @@ class ImapTraverser:
         self._folder = folder
         return True
 
-        
-
-    def getMessageIds(self):
+    def getMessageIds(self,startdate,beforedate,includedeleted):
         criteria = ""
-        if self._includeDeleted==False:
+        if includedeleted==False:
             criteria += "NOT DELETED"
 
-        if self._startDate!=None:
-            criteria += f" SINCE \"{self._startDate.strftime('%d-%b-%Y')}\""
+        if startdate!=None:
+            criteria += f" SINCE \"{startdate.strftime('%d-%b-%Y')}\""
 
-        if self._beforeDate!=None:
-            criteria += f" BEFORE \"{self._beforeDate.strftime('%d-%b-%Y')}\""
+        if beforedate!=None:
+            criteria += f" BEFORE \"{beforedate.strftime('%d-%b-%Y')}\""
 
         if len(criteria)==0:
             criteria.append("ALL")
@@ -175,6 +156,17 @@ class ImapTraverser:
 
     def nrFolders(self):
         return len(self._folders)
+
+    def logout(self):
+        if self._client==None:
+            return
+
+        try:
+            self._client.logout()
+        except (IMAPClient.Error, socket.error) as err:
+            logging.error( f"Exception cought when logging out from IMAP server: {err}")
+
+        self._client = None
 
     def currentFolderIdx(self):
         return self._currentFolderIdx

@@ -66,10 +66,8 @@ class Imap2GMail:
                 break
 
             if traverser.setFolder( folder ):
-                traverser.setBeforeDate( self._before_date )
-                traverser.setStartDate( self._start_date )
-                traverser.includeDeleted( self._include_deleted )
-                messageids = traverser.getMessageIds()
+                messageids = traverser.getMessageIds(self._start_date,self._before_date,
+                                                     self._include_deleted)
 
                 for messageid in messageids:
                     self._messagequeue.put( imaptraverser.ImapMessageID( folder, messageid ))
@@ -118,6 +116,10 @@ class Imap2GMail:
                 self._messagecache.list.append( message )
                 if threadidx==0 and self._cachefile:
                     self._messagecache.write( self._cachefile )
+
+        traverser.logout()
+
+        
 
 
 
