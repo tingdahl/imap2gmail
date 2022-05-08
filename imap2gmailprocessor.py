@@ -4,7 +4,7 @@ import multiprocessing
 import queue
 import threading
 import imapreader
-import gmailclient
+import gmailimapimporter
 import logging
 
 # Reads data from an IMAP server and imports them into GMail. IMAP folders
@@ -23,7 +23,7 @@ class Imap2GMail:
         self._folderqueue = queue.SimpleQueue()
         self._messagequeue = queue.SimpleQueue()
 
-        self._gmailclient = gmailclient.GMailImapImporter( google_credentials )
+        self._gmailclient = gmailimapimporter.GMailImapImporter( google_credentials )
         self._gmailclient.loadLabels()
 
         self._imapreaders = []

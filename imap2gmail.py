@@ -3,9 +3,7 @@
 
 import datetime
 import multiprocessing
-import threading
 import imapreader
-import gmailclient
 import logging
 import argparse
 import imap2gmailprocessor
