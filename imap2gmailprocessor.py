@@ -1,5 +1,3 @@
-# List number of messages in INBOX folder
-# and print details of the messages that are not deleted
 
 from json.tool import main
 import multiprocessing
@@ -9,6 +7,8 @@ import imapreader
 import gmailclient
 import logging
 
+# Reads data from an IMAP server and imports them into GMail. IMAP folders
+# becomes GMail labels.
 
 class Imap2GMail:
     def __init__(self, imap_credentials, google_credentials, nrthreads,
@@ -23,7 +23,7 @@ class Imap2GMail:
         self._folderqueue = queue.SimpleQueue()
         self._messagequeue = queue.SimpleQueue()
 
-        self._gmailclient = gmailclient.GMailClient( google_credentials )
+        self._gmailclient = gmailclient.GMailImapImporter( google_credentials )
         self._gmailclient.loadLabels()
 
         self._imapreaders = []
@@ -57,6 +57,7 @@ class Imap2GMail:
 
 
     def discoverFolder(self,threadidx):
+
         traverser = self._imapreaders[threadidx]
 
         while True:
@@ -113,7 +114,7 @@ class Imap2GMail:
                 logging.error(f"Cannot fetch message UID: {message.id}) in folder {message.folder}")
                 continue
 
-            if self._gmailclient.addMessage( imapmessage, message.folder )!=False:
+            if self._gmailclient.importImapMessage( imapmessage, message.folder )!=False:
                 self._messagecache.list.append( message )
                 if threadidx==0 and self._cachefile:
                     self._messagecache.writeJSonFile( self._cachefile )

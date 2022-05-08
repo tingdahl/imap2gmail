@@ -21,8 +21,10 @@ SCOPES = ['https://www.googleapis.com/auth/gmail.labels',
 MAX_CALLS_PER_SECOND=9
 ONE_SECOND = 1
 
+# Representation of an GMail label, and its IMAP folder source
+
 class GMailLabel:
-    name = '';
+    name = ''
     IMAPfolder = ''
     GMailID = ''
 
@@ -31,10 +33,15 @@ class GMailLabel:
         self.IMAPfolder = folder
         self.GMailID = gmailid
 
+# Collection of GMailLabels. 
 
 class GMailLabels:
 
-    def findLabel(self,imapfolder):
+    # Find the corresponding label for an IMAP folder. Labels that are read from
+    # GMail does not know their (original) IMAP folder. It is assumed that their
+    # display name matches the folder name.
+
+    def findLabelForImapFolder(self,imapfolder):
         for label in self.labels:
             if label.IMAPfolder ==imapfolder:
                 return label
@@ -43,14 +50,11 @@ class GMailLabels:
 
         return None
 
-
-    #Get all labels for folders. May be SENT, but also subfolders of SENT.
-    def getLabelList(self, imapfolder):
-        return []
-
     labels = []
 
-class GMailClient:
+# Class import messages to 
+
+class GMailImapImporter:
     TOKENFILE = 'gmail_token.json'
 
     def __init__(self,credentialsfile):
@@ -63,18 +67,22 @@ class GMailClient:
             # TODO(developer) - Handle errors from gmail API.
             logging.error(f'An error occurred: {error}')
 
+    # Load the current labels in GMail and try to map them to 
+    # known system folders (inbox, sent, drafts, ...) and states (read, starred, ...)
+
     def loadLabels(self):
+        logging.info("Reading current GMail labels.")
         try:
             results = self._service.users().labels().list(userId='me').execute()
             labels = results.get('labels', [])
-
         except HttpError as error:
             # TODO(developer) - Handle errors from gmail API.
-            logging.critical("Cannot read labels.")
+            logging.critical(f"Cannot read labels: {error}")
+            return False
 
         if not labels:
-            print('No labels found.')
-            return
+            logging.error("No labels found in GMail.")
+            return False
 
         self._labels = GMailLabels()
         self._unreadlabel = None
@@ -109,11 +117,15 @@ class GMailClient:
 
             self._labels.labels.append( newlabel )
 
+        return True
+
+    # Prepare the client for a number of imap folder. Create corresponding labels in
+    # GMail if necessary.
 
     def addImapFolders(self,folders):
         for folder in folders:
-            label = self._labels.findLabel( folder )
-            if label!=None:
+            label = self._labels.findLabelForImapFolder( folder )
+            if label!=None: # Label exists
                 continue
 
             label_obj = {'name': folder}
@@ -127,21 +139,27 @@ class GMailClient:
             
             except Exception as error:
                 logging.error(f"An error occurred while creating label {folder}: {error}")
+                return False
 
             self._labels.labels.append( GMailLabel( folder, folder, result['id']))
 
-    #Add message to Gmail, with the apropriate labels based on flags and folder
+        return True
+
+    # Add message to Gmail, with the apropriate labels based on flags and folder.
+    # The message is expected to have the FLAGS and RFC822 parts.
+
     @sleep_and_retry
     @limits(calls=MAX_CALLS_PER_SECOND, period=ONE_SECOND)
-    def addMessage(self, message, folder ):
+    def importImapMessage(self, message, folder ):
         flags = message[b'FLAGS']
         messagelabels = []
   
-        folderlabel = self._labels.findLabel(folder)
+        # Find label based on folder name
+        folderlabel = self._labels.findLabelForImapFolder(folder)
         if folderlabel!=None:
             messagelabels.append( folderlabel.GMailID )
 
-        #Search for flagged and seen flags, and set labels accordingly
+        # Search for flagged and seen flags, and set labels accordingly
         seen = False
         flagged = False
         junk = False
@@ -173,12 +191,15 @@ class GMailClient:
             if deleted==True:
                 messagelabels.append( self._trashlabel.GMailID )
 
+        # Prepare message to be posted to API
+
         message_obj = {'raw': urlsafe_b64encode(message[b'RFC822']).decode(),
                        'labelIds': messagelabels }
 
         
         if self._refreshToken()==False:
             logging.critical("Refresh token failed.")
+            return False
 
         try:
             http = google_auth_httplib2.AuthorizedHttp( self._creds, http=httplib2.Http() )
@@ -195,6 +216,9 @@ class GMailClient:
 
         return True
 
+    # If a token doe snot exists, use credentials file to ask user for permission 
+    # and get a token. 
+
     def _loadCredentials(self,credentialsfile):
         self._creds = None
         if os.path.exists( self.TOKENFILE ):
@@ -206,7 +230,9 @@ class GMailClient:
             self._creds = flow.run_local_server(port=0)
             self._writeToken()
 
-        return self._creds
+        return self._creds!=None
+
+    # Refresh the token
 
     def _refreshToken(self):
         if self._creds and self._creds.expired and self._creds.refresh_token:
@@ -219,8 +245,9 @@ class GMailClient:
 
         return self._creds and self._creds.valid
 
+    # Save the credentials for the next run
 
     def _writeToken(self):
-        # Save the credentials for the next run
+        
         with open(self.TOKENFILE, 'w') as token:
             token.write(self._creds.to_json())
