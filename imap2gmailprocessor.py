@@ -3,7 +3,6 @@
 # Licenced under the MIT licence, see license.md
 # 
 
-import multiprocessing
 import queue
 import threading
 import imapreader
@@ -12,25 +11,36 @@ import logging
 
 # Reads data from an IMAP server and imports them into GMail. IMAP folders
 # becomes GMail labels.
+# There are two stages in the processing
+# 1. discovery
+#    The imap server's directory structure is read and each directory is added to a
+#    queue. Each directory is searched for messages that match the date and include-deleted
+#    criteria. All messages in from all directories are added to the messagequeue.
+#
+# 2. processing
+#    The queue is processed from a number of threads. Each message is checked if it is
+#    present in the cache. If so, it is skipped. Otherwise, it is read from the imap server
+#    and imported to GMail.
+
 
 class Imap2GMailProcessor:
-    def __init__(self, imap_credentials, google_credentials, nrthreads,
-                 start_date, before_date,include_deleted, cachefile  ):
-        self._imapcredentials = imap_credentials
-        self._nrThreads = nrthreads
-        self._start_date = start_date
-        self._before_date = before_date
-        self._include_deleted=include_deleted
+    def __init__(self, imapcredentials, googlecredentials, nrthreads,
+                 startdate, beforedate,includedeleted, cachefile):
+        self._imapcredentials = imapcredentials
+        self._nrthreads = nrthreads
+        self._startdate = startdate
+        self._beforedate = beforedate
+        self._includedeleted=includedeleted
 
-        self._lock = multiprocessing.Lock()
         self._folderqueue = queue.SimpleQueue()
         self._messagequeue = queue.SimpleQueue()
 
-        self._gmailclient = gmailimapimporter.GMailImapImporter( google_credentials )
+        self._gmailclient = gmailimapimporter.GMailImapImporter( googlecredentials )
         self._gmailclient.loadLabels()
 
+        logging.info(f"Initiating {self._nrthreads} threads.")
         self._imapreaders = []
-        for threadidx in range(self._nrThreads):
+        for threadidx in range(self._nrthreads):
             self._imapreaders.append( imapreader.ImapReader( self._imapcredentials ) ) 
 
         self._initialmessagecache = imapreader.ImapMessageIDList()
@@ -40,6 +50,8 @@ class Imap2GMailProcessor:
         self._messagecache.loadJsonFile( cachefile )
         self._cachefile = cachefile
 
+    # Create a queue of all messages on the imap server that should be imported
+
     def discoverMessages(self):
         folders = self._imapreaders[0].retrieveAllFolders()
         self._gmailclient.addImapFolders( folders )
@@ -48,20 +60,24 @@ class Imap2GMailProcessor:
             self._folderqueue.put( folder )
 
         threads = []
-        for threadidx in range(self._nrThreads):
-            thread = threading.Thread(target=discoverFolder,args=(self,threadidx,))
+        for threadidx in range(self._nrthreads):
+            thread = threading.Thread(target=discoverFolderThreadFunction,
+                                      args=(self,threadidx,))
             thread.start()
             threads.append(thread)
 
+        # Wait for all to finish
         for thread in threads:
             thread.join()
 
-        self._nrMessages = self._messagequeue.qsize()
+        self._nrmessages = self._messagequeue.qsize()
 
+    
+    # DiscoverFolder function for each thread. Processes messages in the queue
 
-    def discoverFolder(self,threadidx):
+    def discoverFolderThreadFunction(self,threadidx):
 
-        traverser = self._imapreaders[threadidx]
+        reader = self._imapreaders[threadidx]
 
         while True:
             try:
@@ -69,31 +85,32 @@ class Imap2GMailProcessor:
             except:
                 break
 
-            if traverser.setCurrentFolder( folder ):
-                messageids = traverser.searchMessages(self._start_date,self._before_date,
-                                                     self._include_deleted)
+            if reader.setCurrentFolder( folder ):
+                messageids = reader.searchMessages(self._startdate,self._beforedate,
+                                                     self._includedeleted)
 
                 for messageid in messageids:
                     self._messagequeue.put( imapreader.ImapMessageID( folder, messageid ))
 
-            
+    # Goes through the queue of all messages and imports them to GMail        
 
     def process(self):
 
         threads = []
-        for threadidx in range(self._nrThreads):
-            thread = threading.Thread(target=processFunction,args=(self,threadidx,))
+        for threadidx in range(self._nrthreads):
+            thread = threading.Thread(target=processThreadFunction,args=(self,threadidx,))
             thread.start()
             threads.append(thread)
 
+        # Wait for all threads to finish
         for thread in threads:
             thread.join()      
 
         if self._cachefile:
             self._messagecache.writeJSonFile( self._cachefile )
 
-    def processFunction(self,threadidx):
-        traverser = self._imapreaders[threadidx]
+    def processThreadFunction(self,threadidx):
+        reader = self._imapreaders[threadidx]
         
         while True:
             try:
@@ -101,17 +118,17 @@ class Imap2GMailProcessor:
             except:
                 break
 
-            messageidx = self._nrMessages - self._messagequeue.qsize()
+            messageidx = self._nrmessages - self._messagequeue.qsize()
 
             if self._initialmessagecache.contains( message )==True:
-                logging.info( f"Skipping message {messageidx} of {self._nrMessages} (UID: {message.id} in folder {message.folder})")
+                logging.info( f"Skipping message {messageidx} of {self._nrmessages} (UID: {message.id} in folder {message.folder})")
                 continue
 
-            if traverser.setCurrentFolder( message.folder )==False:
+            if reader.setCurrentFolder( message.folder )==False:
                 continue
 
-            logging.info(  f"Processing message {messageidx} of {self._nrMessages} (UID: {message.id} in folder {message.folder})")
-            imapmessage = traverser.loadMessage( message.id )
+            logging.info(  f"Processing message {messageidx} of {self._nrmessages} (UID: {message.id} in folder {message.folder})")
+            imapmessage = reader.loadMessage( message.id )
 
             if imapmessage==None:
                 logging.error(f"Cannot fetch message UID: {message.id}) in folder {message.folder}")
@@ -122,16 +139,15 @@ class Imap2GMailProcessor:
                 if threadidx==0 and self._cachefile:
                     self._messagecache.writeJSonFile( self._cachefile )
 
-        traverser.logout()
+        reader.logout()
 
+# Wrapper function for discoverFolderThreadFunction        
         
+def discoverFolderThreadFunction(obj,threadnr):
+    obj.discoverFolderThreadFunction(threadnr)    
 
+# Wrapper function for processThreadFunction
 
-
-        
-def discoverFolder(obj,threadnr):
-    obj.discoverFolder(threadnr)    
-
-def processFunction(obj,threadnr):
-    obj.processFunction(threadnr)
+def processThreadFunction(obj,threadnr):
+    obj.processThreadFunction(threadnr)
 
