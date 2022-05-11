@@ -6,3 +6,5 @@ imap_credentials.json
 *.sw?
 
 cache_file.json
+dist
+imap2gmail.egg-info

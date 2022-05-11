@@ -8,7 +8,7 @@
             "name": "Python: Current File",
             "type": "python",
             "request": "launch",
-            "program": "imap2gmail.py",
+            "program": "imap2gmail/imap2gmail.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args":["--imap_credentials_file", "imap_credentials.json",
