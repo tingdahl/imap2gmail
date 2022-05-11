@@ -18,7 +18,7 @@ REST API's.
          'https://www.googleapis.com/auth/gmail.insert'
   
      When these credentials are created, point to it with the --google_credentials argument.
-  5. To avoid transferring new emails every time, specity the --cache_file. When specified,
+  5. To avoid transferring new emails every time, specify the --cache_file. When specified,
      a list of transferred messages will be stored locally. Note, changes to these messages (such as new edits of drafts, changes to flags (read, starred, etc)) will not be updated at subsequal runs.
   6. It is recommended that large inboxes are migrated in chunks based on age. Start by  
      specifying the --before_date YYYY-MM-DD, and then run it again with a later date.
