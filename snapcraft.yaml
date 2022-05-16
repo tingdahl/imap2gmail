@@ -1,0 +1,19 @@
+name: imap2gmail
+version: '1.0'
+summary: IMAP2GMail
+description: |
+  Imap2GMail copies messages on an IMAP server to a GMail account
+confinement: devmode
+base: core18
+
+parts:
+  test-offlineimap-tingdahl:
+    plugin: python
+    python-version: python2
+    source: https://github.com/tingdahl/imap2gmail.git
+    stage-packages:
+      - python-six
+
+apps:
+  test-offlineimap-tingdahl:
+    command: bin/imap2gmail
