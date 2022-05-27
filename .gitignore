@@ -8,3 +8,7 @@ imap_credentials.json
 cache_file.json
 dist
 imap2gmail.egg-info
+testenv
+tmp
+build
+*.snap

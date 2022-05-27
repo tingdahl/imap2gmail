@@ -5,8 +5,8 @@
 
 import queue
 import threading
-import imapreader
-import gmailimapimporter
+from .imapreader import ImapMessageID,ImapMessageIDList,ImapReader
+from .gmailimapimporter import GMailImapImporter
 import logging
 
 # Reads data from an IMAP server and imports them into GMail. IMAP folders
@@ -35,18 +35,18 @@ class Imap2GMailProcessor:
         self._folderqueue = queue.SimpleQueue()
         self._messagequeue = queue.SimpleQueue()
 
-        self._gmailclient = gmailimapimporter.GMailImapImporter( googlecredentials )
+        self._gmailclient = GMailImapImporter( googlecredentials )
         self._gmailclient.loadLabels()
 
         logging.info(f"Initiating {self._nrthreads} threads.")
         self._imapreaders = []
         for threadidx in range(self._nrthreads):
-            self._imapreaders.append( imapreader.ImapReader( self._imapcredentials ) ) 
+            self._imapreaders.append( ImapReader( self._imapcredentials ) ) 
 
-        self._initialmessagecache = imapreader.ImapMessageIDList()
+        self._initialmessagecache = ImapMessageIDList()
         self._initialmessagecache.loadJsonFile( cachefile )
 
-        self._messagecache = imapreader.ImapMessageIDList()
+        self._messagecache = ImapMessageIDList()
         self._messagecache.loadJsonFile( cachefile )
         self._cachefile = cachefile
 
@@ -90,7 +90,7 @@ class Imap2GMailProcessor:
                                                      self._includedeleted)
 
                 for messageid in messageids:
-                    self._messagequeue.put( imapreader.ImapMessageID( folder, messageid ))
+                    self._messagequeue.put( ImapMessageID( folder, messageid ))
 
     # Goes through the queue of all messages and imports them to GMail        
 

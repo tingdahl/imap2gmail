@@ -8,10 +8,10 @@
 
 import datetime
 import multiprocessing
-import imapreader
+from .imapreader import ImapCredentials
 import logging
 import argparse
-import imap2gmailprocessor
+from .imap2gmailprocessor import Imap2GMailProcessor
 
 def imap2gmail():
     logging.basicConfig( level=logging.INFO )
@@ -41,7 +41,7 @@ def imap2gmail():
     args = parser.parse_args()
 
     #Parse imap creds
-    imapcredentials = imapreader.ImapCredentials()
+    imapcredentials = ImapCredentials()
 
     if args.imap_credentials_file:
         imapcredentials.loadJsonFile( args.imap_credentials_file )
@@ -66,7 +66,7 @@ def imap2gmail():
 
     nrthreads = min(multiprocessing.cpu_count()*2,maxnrthreads)
 
-    processor = imap2gmailprocessor.Imap2GMailProcessor( imapcredentials, args.google_credentials, nrthreads,
+    processor = Imap2GMailProcessor( imapcredentials, args.google_credentials, nrthreads,
                     args.start_date, args.before_date,args.include_deleted,
                     args.cache_file )
 
