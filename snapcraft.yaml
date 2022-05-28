@@ -4,12 +4,11 @@ summary: IMAP2GMail
 description: |
   Imap2GMail copies messages on an IMAP server to a GMail account
 confinement: devmode
-base: core18
+base: core20
 
 parts:
   test-offlineimap-tingdahl:
     plugin: python
-    python-version: python2
     source: https://github.com/tingdahl/imap2gmail.git
     stage-packages:
       - python-six
