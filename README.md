@@ -26,6 +26,16 @@ REST API's.
 
 ## Installation
 
+The by far easiest way to use imap2gmail is to use the snapstore:
+
+[![Get it from the Snap Store](https://snapcraft.io/static/images/badges/en/snap-store-black.svg)](https://snapcraft.io/imap2gmail)
+
+### Snapstore
+
+Inststall imap2gmail and keep it up 2 date by
+
+    snap install imap2gmail
+
 ### Without installation
 
 The software can be run without any installation. Note that all dependencies must be installed for this option to work.
