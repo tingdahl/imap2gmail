@@ -72,13 +72,19 @@ class ImapCredentials:
     password = ""
 
     def loadJsonFile(self, filename):
-        f = open(filename,)
+        try:
+            f = open(filename,)
+        except OSError as err:
+            logging.critical(f"Cannot open file {filename}: {err}")
+            return False
+
         input = json.load(f)
         f.close()
 
         self.host = input["host"]
         self.password = input["password"]
         self.user = input["user"]
+        return True
 
     def isOK(self):
         return self.host!='' and self.password!='' and self.user!=''
@@ -100,11 +106,17 @@ class ImapReader:
             self._client = IMAPClient( credentials.host, ssl=True, use_uid=True )
         except (IMAPClient.Error, socket.error) as err:
             logging.critical(f"Cannot connect to IMAP server: {err}")
+            return
 
         try:
             self._client.login( credentials.user, credentials.password )
         except (IMAPClient.Error, socket.error) as err:
             logging.critical(f"Cannot login to IMAP server: {err}")
+            self._client = None
+            return
+
+    def isOK(self):
+        return self._client != None
 
     #Get a list of folders from server.
     def retrieveAllFolders(self):
