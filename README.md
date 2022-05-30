@@ -28,7 +28,7 @@ REST API's.
 
 The by far easiest way to use imap2gmail is to use the snapstore:
 
-[![Get it from the Snap Store](https://snapcraft.io/static/images/badges/en/snap-store-black.svg)](https://snapcraft.io/imap2gmail)
+[![Get it from the Snap Store](https://snapcraft.io/static/images/badges/en/snap-store-white.svg)](https://snapcraft.io/imap2gmail)
 
 ### Snapstore
 
