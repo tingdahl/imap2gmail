@@ -140,7 +140,7 @@ class ImapReader:
         logging.info( f"Switching to folder {folder}")
 
         try:
-            self._client.select_folder( folder )
+            self._client.select_folder( folder, readonly=True )
         except (IMAPClient.Error, socket.error) as err:
             logging.error(
                     f"Cannot switch to folder {folder}: {err}")
@@ -175,7 +175,7 @@ class ImapReader:
         
         return messages
 
-    # Loads a message in current folder. Returns an array of Envelope, Flags, and RFC822
+    # Loads a message in current folder. Returns an array of Flags, and RFC822
     # message
 
     def loadMessage(self,msgid):
