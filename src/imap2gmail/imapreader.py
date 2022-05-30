@@ -151,7 +151,7 @@ class ImapReader:
             criteria += f" BEFORE \"{beforedate.strftime('%d-%b-%Y')}\""
 
         if len(criteria)==0:
-            criteria.append("ALL")
+            criteria = "ALL"
 
         logging.info( f"Searching in {self._folder}")
         try:
