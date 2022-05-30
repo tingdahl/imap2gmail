@@ -1,14 +1,14 @@
-gmail_token.json
-gmail_credentials.json
-imap_credentials.json
-
+#Build artifacts
 *.pyc
 *.sw?
-
-cache_file.json
 dist
 imap2gmail.egg-info
 testenv
-tmp
 build
-*.snap
+snapcraft/*.snap
+
+# Common debug files
+cache_file.json
+gmail_token.json
+gmail_credentials.json
+imap_credentials.json
