@@ -5,6 +5,7 @@ description: |
   Imap2GMail copies messages on an IMAP server to a GMail account
 confinement: devmode
 base: core20
+grade: stable
 
 parts:
   test-offlineimap-tingdahl:

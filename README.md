@@ -12,10 +12,9 @@ REST API's.
   3. Specify the imail credetials either on the command line, or with the --credentials-file. Use
      the imap_credentials.example.json file as a template.
   4. Specify the gmail credentials file. This is the credentials of the application, NOT of the
-     GMail account. The credentials file can be obtained int the Google Cloud Platform, under the "API / Create credentials" section. The following scopes must be supported:
+     GMail account. The credentials file can be obtained int the Google Cloud Platform, under the "API / Create credentials" section. The following scope must be supported:
   
-         'https://www.googleapis.com/auth/gmail.labels'
-         'https://www.googleapis.com/auth/gmail.insert'
+         'https://www.googleapis.com/auth/gmail.modify'
   
      When these credentials are created, point to it with the --google_credentials argument.
   5. To avoid transferring new emails every time, specify the --cache_file. When specified,
@@ -23,4 +22,32 @@ REST API's.
   6. It is recommended that large inboxes are migrated in chunks based on age. Start by  
      specifying the --before_date YYYY-MM-DD, and then run it again with a later date.
   7. At first run, the browser will start, and ask you for permission to run the application. The
-     resulting token will be stored in a local file.
+     resulting token will be stored in a local file (gmail_token.json).
+
+## Installation
+
+The by far easist way to use the script is to use the snap from Canonical's snapstore, but PIP options as well as running the software without installation is also possible
+
+### Snap (for all users)
+
+By far the easiest option. Install it, and all dependencies are automatically resolved.
+
+  snap install imap2gmail
+
+### Using PIP (for all users)
+
+  pip install imap2gmail
+
+### Using PIP (for local user)
+
+   python3 -m venv imap2gmail
+   source imap2gmail/bin/activate
+   pip install imap2gmail
+
+### Without installation
+
+The software can be run without any installation. Note that all dependencies must be installed for this option to work.
+
+  git clone <https://github.com/tingdahl/imap2gmail.git>
+  cd imap2gmail
+  python3 -m src.imap2gmail.imap2gmail
