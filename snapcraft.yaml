@@ -3,7 +3,7 @@ version: '1.0'
 summary: IMAP2GMail
 description: |
   Imap2GMail copies messages on an IMAP server to a GMail account
-confinement: classic
+confinement: strict
 base: core20
 grade: stable
 
@@ -17,3 +17,6 @@ parts:
 apps:
   imap2gmail:
     command: bin/imap2gmail
+    plugs:
+      - home
+      - network

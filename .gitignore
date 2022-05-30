@@ -5,7 +5,7 @@ dist
 imap2gmail.egg-info
 testenv
 build
-snapcraft/*.snap
+*.snap
 
 # Common debug files
 cache_file.json
