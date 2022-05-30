@@ -8,12 +8,12 @@ base: core20
 grade: stable
 
 parts:
-  test-offlineimap-tingdahl:
+  imap2gmail:
     plugin: python
     source: https://github.com/tingdahl/imap2gmail.git
     stage-packages:
       - python-six
 
 apps:
-  test-offlineimap-tingdahl:
+  imap2gmail:
     command: bin/imap2gmail
