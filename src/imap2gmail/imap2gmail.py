@@ -8,6 +8,7 @@
 
 import datetime
 import multiprocessing
+import sys
 from .imapreader import ImapCredentials
 import logging
 import argparse
@@ -35,6 +36,10 @@ def imap2gmail():
 
     parser.add_argument("--include_deleted", action='store_const', const=True,
                         help="Should messaged marked as deleted be included.")
+
+    parser.add_argument("--reauthenticate", action='store_const', const=False,
+                        help="Force new authentification by Google.")
+
     parser.add_argument('--start_date',type=lambda s: datetime.datetime.strptime(s, '%Y-%m-%d'),)
     parser.add_argument('--before_date',type=lambda s: datetime.datetime.strptime(s, '%Y-%m-%d'))
 
@@ -49,7 +54,7 @@ def imap2gmail():
     else:
         if args.imap_host==False or args.imap_user==False or args.imap_password==False:
             print("You most specify either imap_credentials file or imap_host, imap_user, and imap_password")
-            exit(1)
+            return False
 
         imapcredentials.host = args.imap_host
         imapcredentials.user = args.imap_user
@@ -58,23 +63,36 @@ def imap2gmail():
 
     if imapcredentials.isOK()==False:
         logging.error("Credentials not read")
-        exit(1)
+        return False
 
     maxnrthreads = 16
     if args.max_threads:
         maxnrthreads = int(args.max_threads)
 
     nrthreads = min(multiprocessing.cpu_count()*2,maxnrthreads)
+    nrthreads = max(nrthreads,1)
 
     processor = Imap2GMailProcessor( imapcredentials, args.google_credentials, nrthreads,
-                    args.start_date, args.before_date,args.include_deleted,
+                    args.start_date, args.before_date,args.include_deleted,args.reauthenticate!=None,
                     args.cache_file )
 
-    processor.discoverMessages()
+    if processor.isOK()==False:
+        return False
+
+    if processor.discoverMessages()==False:
+        return False
+        
     processor.process()
 
+    return True
+
+
 if __name__ == "__main__":
-    imap2gmail()
+    if imap2gmail()==True:
+        sys.exit(0)
+
+    sys.exit(1)
+
 
     
     

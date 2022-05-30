@@ -25,7 +25,7 @@ import logging
 
 class Imap2GMailProcessor:
     def __init__(self, imapcredentials, googlecredentials, nrthreads,
-                 startdate, beforedate,includedeleted, cachefile):
+                 startdate, beforedate,includedeleted, reauthenticiate, cachefile):
         self._imapcredentials = imapcredentials
         self._nrthreads = nrthreads
         self._startdate = startdate
@@ -35,13 +35,21 @@ class Imap2GMailProcessor:
         self._folderqueue = queue.SimpleQueue()
         self._messagequeue = queue.SimpleQueue()
 
-        self._gmailclient = GMailImapImporter( googlecredentials )
-        self._gmailclient.loadLabels()
+        self._gmailclient = GMailImapImporter( googlecredentials, reauthenticiate )
+        if self._gmailclient.isOK()==False:
+            return
+
+        if self._gmailclient.loadLabels()==False:
+            return
 
         logging.info(f"Initiating {self._nrthreads} threads.")
         self._imapreaders = []
         for threadidx in range(self._nrthreads):
-            self._imapreaders.append( ImapReader( self._imapcredentials ) ) 
+            reader = ImapReader( self._imapcredentials )
+            if reader.isOK()==False:
+                return
+
+            self._imapreaders.append( reader ) 
 
         self._initialmessagecache = ImapMessageIDList()
         self._initialmessagecache.loadJsonFile( cachefile )
@@ -50,10 +58,16 @@ class Imap2GMailProcessor:
         self._messagecache.loadJsonFile( cachefile )
         self._cachefile = cachefile
 
+    def isOK(self):
+        return self._gmailclient.isOK() and len(self._imapreaders)>0
+
     # Create a queue of all messages on the imap server that should be imported
 
     def discoverMessages(self):
         folders = self._imapreaders[0].retrieveAllFolders()
+        if len(folders)<1:
+            return False
+
         self._gmailclient.addImapFolders( folders )
 
         for folder in folders:
@@ -71,6 +85,8 @@ class Imap2GMailProcessor:
             thread.join()
 
         self._nrmessages = self._messagequeue.qsize()
+
+        return True
 
     
     # DiscoverFolder function for each thread. Processes messages in the queue

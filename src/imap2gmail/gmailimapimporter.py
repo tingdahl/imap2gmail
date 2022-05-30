@@ -12,6 +12,7 @@ from ratelimit import limits, RateLimitException, sleep_and_retry
 from base64 import urlsafe_b64decode, urlsafe_b64encode
 
 from google.auth.transport.requests import Request
+from google.auth.exceptions import GoogleAuthError
 from google.oauth2.credentials import Credentials
 
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -61,8 +62,10 @@ class GMailLabels:
 class GMailImapImporter:
     TOKENFILE = 'gmail_token.json'
 
-    def __init__(self,credentialsfile):
-        if self._loadCredentials( credentialsfile )==False:
+    def __init__(self,credentialsfile,reauthenticate):
+        self._service = None
+        
+        if self._loadCredentials( credentialsfile,reauthenticate )==False:
             return
 
         try:
@@ -74,14 +77,24 @@ class GMailImapImporter:
     # Load the current labels in GMail and try to map them to 
     # known system folders (inbox, sent, drafts, ...) and states (read, starred, ...)
 
+    def isOK(self):
+        return self._service!=None
+
     def loadLabels(self):
         logging.info("Reading current GMail labels.")
+        self._labels = None
+
         try:
             results = self._service.users().labels().list(userId='me').execute()
             labels = results.get('labels', [])
         except HttpError as error:
-            # TODO(developer) - Handle errors from gmail API.
             logging.critical(f"Cannot read labels: {error}")
+            self._service = None #Triggers isOK==False
+            return False
+        except GoogleAuthError as error:
+            # TODO(developer) - Handle errors from gmail API.
+            logging.critical(f"Authentification error: {error}. Try re-authenticate by running with --reauthenticate")
+            self._service = None #Triggers isOK==False
             return False
 
         if not labels:
@@ -136,6 +149,7 @@ class GMailImapImporter:
             
             if self._refreshToken()==False:
                 logging.critical("Refresh token failed.")
+                return False
                 
             try:
                 result = self._service.users().labels().create(userId='me', body=label_obj).execute()
@@ -223,15 +237,25 @@ class GMailImapImporter:
     # If a token doe snot exists, use credentials file to ask user for permission 
     # and get a token. 
 
-    def _loadCredentials(self,credentialsfile):
+    def _loadCredentials(self,credentialsfile,reauthenticate):
         self._creds = None
-        if os.path.exists( self.TOKENFILE ):
+        if reauthenticate==False and os.path.exists( self.TOKENFILE ):
             self._creds = Credentials.from_authorized_user_file(self.TOKENFILE, SCOPES)
 
         if not self._creds:
-            flow = InstalledAppFlow.from_client_secrets_file(
+            try:
+                flow = InstalledAppFlow.from_client_secrets_file(
                     credentialsfile, SCOPES)
-            self._creds = flow.run_local_server(port=0)
+            except OSError as err:
+                logging.critical( f"Cannot create secrets from {credentialsfile}: {err}")
+                return False
+
+            try:
+                self._creds = flow.run_local_server(port=0)
+            except Exception as err:
+                logging.critical(f"No valid client created: {err} Check if google credentials are correct.")
+                return False
+
             self._writeToken()
 
         return self._creds!=None
@@ -254,4 +278,7 @@ class GMailImapImporter:
     def _writeToken(self):
         
         with open(self.TOKENFILE, 'w') as token:
-            token.write(self._creds.to_json())
+            try:
+                token.write(self._creds.to_json())
+            except OSError as err:
+                logging.error(f"Cannot write file {self.TOKENFILE}: {err}")
