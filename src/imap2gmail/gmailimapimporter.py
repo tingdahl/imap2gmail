@@ -20,10 +20,9 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
 # If modifying these scopes, delete the file token.json.
-SCOPES = ['https://www.googleapis.com/auth/gmail.labels',
-        'https://www.googleapis.com/auth/gmail.insert']
+SCOPES = ['https://www.googleapis.com/auth/gmail.modify']
 
-MAX_CALLS_PER_SECOND=9
+MAX_CALLS_PER_SECOND=8
 ONE_SECOND = 1
 
 # Representation of an GMail label, and its IMAP folder source
