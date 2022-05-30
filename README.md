@@ -26,28 +26,10 @@ REST API's.
 
 ## Installation
 
-The by far easist way to use the script is to use the snap from Canonical's snapstore, but PIP options as well as running the software without installation is also possible
-
-### Snap (for all users)
-
-By far the easiest option. Install it, and all dependencies are automatically resolved.
-
-    snap install imap2gmail
-
-### Using PIP (for all users)
-
-    pip install imap2gmail
-
-### Using PIP (for local user)
-
-     python3 -m venv imap2gmail
-     source imap2gmail/bin/activate
-     pip install imap2gmail
-
 ### Without installation
 
 The software can be run without any installation. Note that all dependencies must be installed for this option to work.
 
-    git clone <https://github.com/tingdahl/imap2gmail.git>
+    git clone https://github.com/tingdahl/imap2gmail.git
     cd imap2gmail
     python3 -m src.imap2gmail.imap2gmail
