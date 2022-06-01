@@ -62,7 +62,7 @@ def imap2gmail():
 
 
     if imapcredentials.isOK()==False:
-        logging.error("Credentials not read")
+        logging.error("IMAP Credentials not read")
         return False
 
     maxnrthreads = 16
