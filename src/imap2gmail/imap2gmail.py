@@ -58,7 +58,7 @@ def imap2gmail():
 
         imapcredentials.host = args.imap_host
         imapcredentials.user = args.imap_user
-        imapcredentials._password = args.imap_password
+        imapcredentials.password = args.imap_password
 
 
     if imapcredentials.isOK()==False:
