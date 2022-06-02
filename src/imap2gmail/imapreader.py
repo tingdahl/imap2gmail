@@ -12,18 +12,25 @@ import logging
 
 # Defines a message (with a message ID in a folder)
 class ImapMessageID:
+    folderKey = 'folder'
+    idKey = 'id'
+    __slots__ = 'folder', 'id'
     def __init__(self,folder,id):
         self.folder = folder
         self.id = id
 
+    def json_serialize(self):
+         return {ImapMessageID.folderKey: self.folder, ImapMessageID.idKey: self.id}
+
     def __iter__(self):
         yield from {
-            "folder": self.folder,
-            "id": self.id,
+            ImapMessageID.folderKey: self.folder,
+            ImapMessageID.idKey: self.id,
         }.items()
 
 # List of ImapMessageIDs.
 class ImapMessageIDList:
+    __slots__ = 'list'
     def __init__(self):
         self.list = []
 
@@ -58,7 +65,7 @@ class ImapMessageIDList:
     def writeJSonFile(self,filename):
         file =  open(filename, 'w')
 
-        json_string = json.dumps([ob.__dict__ for ob in self.list])
+        json_string = json.dumps([ob.json_serialize() for ob in self.list])
 
         file.write( json_string )
 
@@ -66,10 +73,7 @@ class ImapMessageIDList:
 
 # Holds host, user, password for an IMAP server
 class ImapCredentials:
-
-    host = ""
-    user = ""
-    password = ""
+    __slots__ = 'host', 'user', 'password'
 
     def loadJsonFile(self, filename):
         try:
@@ -98,9 +102,10 @@ class ImapCredentials:
 
 class ImapReader:
 
-    _folder = ""
+    __slots__ = '_folder', '_client'
 
     def __init__( self, credentials ):
+        self._folder = ""
 
         try:
             self._client = IMAPClient( credentials.host, ssl=True, use_uid=True )

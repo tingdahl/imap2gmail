@@ -28,9 +28,7 @@ ONE_SECOND = 1
 # Representation of an GMail label, and its IMAP folder source
 
 class GMailLabel:
-    name = ''
-    IMAPfolder = ''
-    GMailID = ''
+    __slots__ = 'name', 'IMAPfolder', 'GMailID'
 
     def __init__(self, name, folder, gmailid):
         self.name = name
@@ -40,6 +38,9 @@ class GMailLabel:
 # Collection of GMailLabels. 
 
 class GMailLabels:
+    __slots__ = 'labels'
+    def __init__(self):
+        self.labels = []
 
     # Find the corresponding label for an IMAP folder. Labels that are read from
     # GMail does not know their (original) IMAP folder. It is assumed that their
@@ -54,12 +55,12 @@ class GMailLabels:
 
         return None
 
-    labels = []
-
 # Class import messages to 
 
 class GMailImapImporter:
+    __slots__ = '_service', '_labels', '_unreadlabel', '_starredlabel', '_junklabel', '_trashlabel', '_creds'
     TOKENFILE = 'gmail_token.json'
+
 
     def __init__(self,credentialsfile,reauthenticate):
         self._service = None

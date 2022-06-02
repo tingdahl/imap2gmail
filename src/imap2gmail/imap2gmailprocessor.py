@@ -24,6 +24,11 @@ import logging
 
 
 class Imap2GMailProcessor:
+    __slots__ = '_imapcredentials', '_nrthreads', \
+                '_startdate', '_beforedate', '_includedeleted', \
+                '_folderqueue', '_messagequeue', '_gmailclient', '_imapreaders', \
+                '_initialmessagecache', '_messagecache', '_cachefile', '_nrmessages'
+
     def __init__(self, imapcredentials, googlecredentials, nrthreads,
                  startdate, beforedate,includedeleted, reauthenticiate, cachefile):
         self._imapcredentials = imapcredentials
