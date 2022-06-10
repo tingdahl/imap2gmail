@@ -140,7 +140,12 @@ class GMailImapImporter:
     # GMail if necessary.
 
     def addImapFolders(self,folders):
-        for folder in folders:
+        # Sort labels to start with short ones. Then we will add parent folders before
+        # their eventual childeren. This will make GMail work with nested folders
+ 
+        sortedlabels = sorted( folders, key=len)
+        for folder in sortedlabels:
+            folder = GMailImapImporter._cleanFolderName( folder )
             label = self._labels.findLabelForImapFolder( folder )
             if label!=None: # Label exists
                 continue
@@ -169,6 +174,7 @@ class GMailImapImporter:
     @sleep_and_retry
     @limits(calls=MAX_CALLS_PER_SECOND, period=ONE_SECOND)
     def importImapMessage(self, message, folder ):
+        folder = GMailImapImporter._cleanFolderName(folder)
         flags = message[b'FLAGS']
         messagelabels = []
   
@@ -243,6 +249,10 @@ class GMailImapImporter:
             self._creds = Credentials.from_authorized_user_file(self.TOKENFILE, SCOPES)
 
         if not self._creds:
+            if os.path.exists( credentialsfile )==False:
+                logging.critical(
+                    f"Cannot find {credentialsfile}. If you are running from"
+                    "a snap, all files must in the home directory, or a subdirectory thereof.")
             try:
                 flow = InstalledAppFlow.from_client_secrets_file(
                     credentialsfile, SCOPES)
@@ -282,3 +292,7 @@ class GMailImapImporter:
                 token.write(self._creds.to_json())
             except OSError as err:
                 logging.error(f"Cannot write file {self.TOKENFILE}: {err}")
+
+    # Replace the '.' with a forward slash '/' in folder name
+    def _cleanFolderName(folder):
+        return folder.replace(".","/")
