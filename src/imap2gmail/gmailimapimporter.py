@@ -153,10 +153,10 @@ class GMailImapImporter:
                 
             try:
                 result = self._service.users().labels().create(userId='me', body=label_obj).execute()
-                logging.info(f"Created label {result['id']}")
+                logging.info(f"Created label \"{folder}\" ({result['id']})")
             
             except Exception as error:
-                logging.error(f"An error occurred while creating label {folder}: {error}")
+                logging.error(f"An error occurred while creating label \"{folder}\": {error}")
                 return False
 
             self._labels.labels.append( GMailLabel( folder, folder, result['id']))
