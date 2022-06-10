@@ -141,18 +141,20 @@ class Imap2GMailProcessor:
 
             messageidx = self._nrmessages - self._messagequeue.qsize()
 
+            folderdisplayname = message.folder.replace(".","/")
+
             if self._initialmessagecache.contains( message )==True:
-                logging.info( f"Skipping message {messageidx} of {self._nrmessages} (UID: {message.id} in folder {message.folder})")
+                logging.info( f"Skipping message {messageidx} of {self._nrmessages} (UID: {message.id} in folder {folderdisplayname})")
                 continue
 
             if reader.setCurrentFolder( message.folder )==False:
                 continue
 
-            logging.info(  f"Processing message {messageidx} of {self._nrmessages} (UID: {message.id} in folder {message.folder})")
+            logging.info(  f"Processing message {messageidx} of {self._nrmessages} (UID: {message.id} in folder {folderdisplayname})")
             imapmessage = reader.loadMessage( message.id )
 
             if imapmessage==None:
-                logging.error(f"Cannot fetch message UID: {message.id}) in folder {message.folder}")
+                logging.error(f"Cannot fetch message UID: {message.id}) in folder {folderdisplayname}")
                 continue
 
             if self._gmailclient.importImapMessage( imapmessage, message.folder )!=False:

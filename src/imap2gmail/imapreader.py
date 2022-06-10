@@ -142,13 +142,15 @@ class ImapReader:
         if folder==self._folder:
             return True
 
-        logging.info( f"Switching to folder {folder}")
+        folderdisplayname = folder.replace(".","/")
+
+        logging.info( f"Switching to folder {folderdisplayname}")
 
         try:
             self._client.select_folder( folder, readonly=True )
         except (IMAPClient.Error, socket.error) as err:
             logging.error(
-                    f"Cannot switch to folder {folder}: {err}")
+                    f"Cannot switch to folder {folderdisplayname}: {err}")
             return False
 
         self._folder = folder
