@@ -5,11 +5,45 @@
 
 import datetime
 import multiprocessing
+import os
 import sys
+from tabnanny import check
 from .imapreader import ImapCredentials
 import logging
 import argparse
 from .imap2gmailprocessor import Imap2GMailProcessor
+
+CURRENT_DIR = './'
+
+# Checks file access
+
+def checkFileAccess(filename,read):
+    if filename==None:
+        return True
+
+    if read:
+        if os.path.exists( filename )==False:
+            logging.critical( f"{filename} is not found or accessible")
+            return False
+
+        if os.access(filename,os.R_OK)==False:
+            logging.critical( f"{filename} is not readable")
+            return False
+    else:
+        if os.path.exists( filename )==False:
+            if os.access(filename,os.W_OK)==False:
+                logging.critical( f"{filename} is not writable")
+                return False
+        else:
+            directory = os.path.dirname( filename )
+            if directory=='':
+                directory = CURRENT_DIR
+            if os.access(directory,os.W_OK)==False:
+                logging.critical( f"{filename} is not writable")
+                return False  
+    
+    return True
+
 
 def imap2gmail():
     logging.basicConfig( level=logging.INFO )
@@ -41,6 +75,25 @@ def imap2gmail():
     parser.add_argument('--before_date',type=lambda s: datetime.datetime.strptime(s, '%Y-%m-%d'))
 
     args = parser.parse_args()
+
+
+    # Check file permissions
+    permissionError = False
+    if os.access(CURRENT_DIR, os.W_OK )==False:
+        logging.critical( "No write access in current directory.")
+        permissionError = True
+
+    if checkFileAccess( args.imap_credentials_file, True )==False or \
+       checkFileAccess( args.google_credentials, True)==False or \
+       checkFileAccess( args.cache_file, False )==False:
+        permissionError = True
+
+    if permissionError:
+        logging.error(f"Not sufficient file system access. If {sys.argv[0]} is installed "
+                      "through a snap, the program must be run from the user's home "
+                      "directory, or a subdirectory thereof. All files must also be in "
+                      "the users home directory, or a subdirectory thereof.")
+        exit( 1 )        
 
     #Parse imap creds
     imapcredentials = ImapCredentials()

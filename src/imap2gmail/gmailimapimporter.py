@@ -249,10 +249,6 @@ class GMailImapImporter:
             self._creds = Credentials.from_authorized_user_file(self.TOKENFILE, SCOPES)
 
         if not self._creds:
-            if os.path.exists( credentialsfile )==False:
-                logging.critical(
-                    f"Cannot find {credentialsfile}. If you are running from"
-                    "a snap, all files must in the home directory, or a subdirectory thereof.")
             try:
                 flow = InstalledAppFlow.from_client_secrets_file(
                     credentialsfile, SCOPES)
