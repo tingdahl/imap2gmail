@@ -30,7 +30,7 @@ def checkFileAccess(filename,read):
             logging.critical( f"{filename} is not readable")
             return False
     else:
-        if os.path.exists( filename )==False:
+        if os.path.exists( filename ):
             if os.access(filename,os.W_OK)==False:
                 logging.critical( f"{filename} is not writable")
                 return False
