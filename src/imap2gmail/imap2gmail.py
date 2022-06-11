@@ -50,15 +50,22 @@ def imap2gmail():
 
     parser = argparse.ArgumentParser()
 
-    # IMAP server arguments
-    parser.add_argument("--imap_host")
-    parser.add_argument("--imap_user")
-    parser.add_argument("--imap_password")
-    parser.add_argument("--imap_credentials_file" )
-
     # Google credential file
-    parser.add_argument("--google_credentials", help="Credentials file for the application, as downloaded from GCP." )
+    parser.add_argument("--google_credentials",
+            help="Credentials file for the application, as downloaded from GCP.",
+            required=True)
 
+    # IMAP server arguments
+    imapgroup = parser.add_mutually_exclusive_group()
+    imapgroup.add_argument("--imap_credentials_file" )
+    imapcligroup = imapgroup.add_argument_group()
+
+
+    imapcligroup.add_argument("--imap_host")
+    imapcligroup.add_argument("--imap_user")
+    imapcligroup.add_argument("--imap_password")
+
+    
     # Cache file
     parser.add_argument("--cache_file", help="File where a list of completed e-mails will be kept" )
 
@@ -75,6 +82,11 @@ def imap2gmail():
     parser.add_argument('--before_date',type=lambda s: datetime.datetime.strptime(s, '%Y-%m-%d'))
 
     args = parser.parse_args()
+
+    # Check general parsing stuff
+    if args.google_credentials == None:
+        parser.print_help()
+        return False
 
 
     # Check file permissions
@@ -93,17 +105,17 @@ def imap2gmail():
                       "through a snap, the program must be run from the user's home "
                       "directory, or a subdirectory thereof. All files must also be in "
                       "the users home directory, or a subdirectory thereof.")
-        exit( 1 )        
+        return False       
 
     #Parse imap creds
     imapcredentials = ImapCredentials()
 
     if args.imap_credentials_file:
         imapcredentials.loadJsonFile( args.imap_credentials_file )
-
     else:
-        if args.imap_host==False or args.imap_user==False or args.imap_password==False:
+        if args.imap_host==None or args.imap_user==None or args.imap_password==None:
             print("You most specify either imap_credentials file or imap_host, imap_user, and imap_password")
+            parser.print_help()
             return False
 
         imapcredentials.host = args.imap_host
