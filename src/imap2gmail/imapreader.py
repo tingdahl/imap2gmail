@@ -106,11 +106,11 @@ class ImapReader:
 
     def __init__( self, credentials ):
         self._folder = ""
-
+        self._client = None
         try:
             self._client = IMAPClient( credentials.host, ssl=True, use_uid=True )
         except (IMAPClient.Error, socket.error) as err:
-            logging.critical(f"Cannot connect to IMAP server: {err}")
+            logging.critical(f"Cannot connect to IMAP server {credentials.host}: {err}")
             return
 
         try:
