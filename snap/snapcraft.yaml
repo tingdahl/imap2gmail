@@ -1,10 +1,10 @@
 name: imap2gmail
-version: '1.0.4'
+version: '1.0.5'
 summary: Copy e-mails from IMAP to GMail
 license: MIT
 website: https://github.com/tingdahl/imap2gmail
 description: |
-  imap2gmail copies messages from an IMAP server to a GMail account using GMail's APIs
+  imap2gmail copies messages from an IMAP server to a GMail account using GMail's APIs.
 confinement: strict
 base: core20
 grade: stable

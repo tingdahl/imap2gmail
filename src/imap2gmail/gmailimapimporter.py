@@ -58,7 +58,9 @@ class GMailLabels:
 # Class import messages to 
 
 class GMailImapImporter:
-    __slots__ = '_service', '_labels', '_unreadlabel', '_starredlabel', '_junklabel', '_trashlabel', '_creds'
+    __slots__ = '_service', '_labels', '_unreadlabel', \
+                '_starredlabel', '_junklabel', '_draftlabel', \
+                 '_trashlabel', '_creds'
     TOKENFILE = 'gmail_token.json'
 
 
@@ -130,6 +132,8 @@ class GMailImapImporter:
                 self._junklabel = newlabel
             elif labelid=="TRASH":
                 self._trashlabel = newlabel
+            elif labelid=="DRAFT":
+                self._draftlabel = newlabel
 
 
             self._labels.labels.append( newlabel )
@@ -180,6 +184,27 @@ class GMailImapImporter:
   
         # Find label based on folder name
         folderlabel = self._labels.findLabelForImapFolder(folder)
+
+        if self._refreshToken()==False:
+            logging.critical("Refresh token failed.")
+            return False
+
+        # Drafts are handled separately with a separate drafts.create call.
+        if folderlabel.GMailID==self._draftlabel.GMailID:
+            message_body = {'raw': urlsafe_b64encode(message[b'RFC822']).decode() }
+            message = {'message': message_body}
+            try:
+                http = google_auth_httplib2.AuthorizedHttp( self._creds, http=httplib2.Http() )
+                result = self._service.users().drafts().create(
+                    userId="me",
+                    body=message,
+                    ).execute(num_retries=2,http=http)
+            except Exception as error:
+                logging.error(f"Could not upload draft to GMail: {error}")
+                return False
+
+            return True
+
         if folderlabel!=None:
             messagelabels.append( folderlabel.GMailID )
 
@@ -214,26 +239,19 @@ class GMailImapImporter:
 
             if deleted==True:
                 messagelabels.append( self._trashlabel.GMailID )
-
-        # Prepare message to be posted to API
-
+     
         message_obj = {'raw': urlsafe_b64encode(message[b'RFC822']).decode(),
                        'labelIds': messagelabels }
 
-        
-        if self._refreshToken()==False:
-            logging.critical("Refresh token failed.")
-            return False
-
         try:
-            http = google_auth_httplib2.AuthorizedHttp( self._creds, http=httplib2.Http() )
+            http = google_auth_httplib2.AuthorizedHttp( self._creds, http=httplib2.Http() )    
             result = self._service.users().messages().import_(
-                userId="me",
-                body=message_obj,
-                internalDateSource='dateHeader',
-                processForCalendar=False,
-                neverMarkSpam=True,
-                ).execute(num_retries=2,http=http)
+                    userId="me",
+                    body=message_obj,
+                    internalDateSource='dateHeader',
+                    processForCalendar=False,
+                    neverMarkSpam=True,
+                    ).execute(num_retries=2,http=http)
         except Exception as error:
             logging.error(f"Could not upload message to GMail: {error}")
             return False
