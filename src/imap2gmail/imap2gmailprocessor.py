@@ -73,7 +73,8 @@ class Imap2GMailProcessor:
         if len(folders)<1:
             return False
 
-        self._gmailclient.addImapFolders( folders )
+        if self._gmailclient.addImapFolders( folders )==False:
+            return False
 
         for folder in folders:
             self._folderqueue.put( folder )
