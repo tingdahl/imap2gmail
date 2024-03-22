@@ -134,6 +134,17 @@ class ImapReader:
         folders = []    
 
         for folder in imapfolders:
+            attributes = folder[0]
+
+            skip_folder = False
+            for attribute in attributes:
+                if attribute == b'\\Noselect':
+                    skip_folder = True
+                    break
+
+            if skip_folder==True:
+                continue
+
             folders.append( folder[2] )
 
         return folders
