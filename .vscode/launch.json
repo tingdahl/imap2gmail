@@ -6,16 +6,16 @@
     "configurations": [
         {
             "name": "Python: Module",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "module": "src.imap2gmail.imap2gmail",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args":["--imap_credentials_file", "imap_credentials.json",
                     "--google_credentials", "gmail_credentials.json",
-                    "--max_threads", "14",
+                    "--max_threads", "8",
                     "--cache_file", "cache_file.json",
-                    "--before_date", "2022-05-01"]
+                    "--before_date", "2045-05-01"]
         }
     ]
 }
