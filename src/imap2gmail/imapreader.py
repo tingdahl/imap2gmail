@@ -14,32 +14,37 @@ import logging
 class ImapMessageID:
     folderKey = 'folder'
     idKey = 'id'
-    __slots__ = 'folder', 'id'
+    __slots__ = '_folder', '_id'
     def __init__(self,folder,id):
-        self.folder = folder
-        self.id = id
+        self._folder = folder
+        self._id = id
 
     def json_serialize(self):
-         return {ImapMessageID.folderKey: self.folder, ImapMessageID.idKey: self.id}
+         return {ImapMessageID.folderKey: self._folder, ImapMessageID.idKey: self._id}
 
     def __iter__(self):
         yield from {
-            ImapMessageID.folderKey: self.folder,
-            ImapMessageID.idKey: self.id,
+            ImapMessageID.folderKey: self._folder,
+            ImapMessageID.idKey: self._id,
         }.items()
+
 
 # List of ImapMessageIDs.
 class ImapMessageIDList:
-    __slots__ = 'list'
+    __slots__ = '_foldersidslist'
     def __init__(self):
-        self.list = []
+        self._foldersidslist = {}
+
+    def setFolders(self, folders ) -> None:
+        for foldername in folders:
+            if foldername not in self._foldersidslist:
+                self._foldersidslist[foldername] = []
 
     # Returns true if checkid exists in the list
     def contains(self, checkid):
-        for listid in self.list:
-            if listid.id == checkid.id and listid.folder==checkid.folder:
-                return True
-
+        if checkid._folder in self._foldersidslist:
+            return checkid._id in self._foldersidslist[checkid._folder]
+        
         return False
 
     # Load list from json file
@@ -52,28 +57,39 @@ class ImapMessageIDList:
                 importlist = json.load( file )
             except:
                 logging.error("Could not read cache file.")
-                self.list = []
+                self._foldersidslist = {}
 
             file.close()
 
             for id in importlist:
-                self.list.append( ImapMessageID(id['folder'],id['id'] ))
+                foldername = id['folder']
+                if foldername not in self._foldersidslist:
+                    self._foldersidslist[foldername] = []
+                
+                self._foldersidslist[foldername].append( id['id'] )
 
-            logging.info(f"Loaded {len(self.list)} cache items from {filename}.")
+            logging.info(f"Loaded {len(importlist)} cache items from {filename}.")
 
     # Write list to json file
     def writeJSonFile(self,filename):
         file =  open(filename, 'w')
 
-        json_string = json.dumps([ob.json_serialize() for ob in self.list])
+        exportlist = []
+        
+        for folder in self._foldersidslist:
+            for id in self._foldersidslist[folder]:
+                exportlist.append( ImapMessageID( folder, id ))
 
+
+        json_string = json.dumps([ob.json_serialize() for ob in exportlist])
+        logging.info(f"Saving cache file {filename}.")
         file.write( json_string )
 
         file.close()
 
 # Holds host, user, password for an IMAP server
 class ImapCredentials:
-    __slots__ = 'host', 'user', 'password'
+    __slots__ = '_host', '_user', '_password'
 
     def loadJsonFile(self, filename):
         try:
@@ -85,13 +101,13 @@ class ImapCredentials:
         input = json.load(f)
         f.close()
 
-        self.host = input["host"]
-        self.password = input["password"]
-        self.user = input["user"]
+        self._host = input["host"]
+        self._password = input["password"]
+        self._user = input["user"]
         return True
 
     def isOK(self):
-        return self.host!='' and self.password!='' and self.user!=''
+        return self._host!='' and self._password!='' and self._user!=''
 
 # Opens connection to an IMAP server, and provides limited services
 # to read data from it 
@@ -108,13 +124,13 @@ class ImapReader:
         self._folder = ""
         self._client = None
         try:
-            self._client = IMAPClient( credentials.host, ssl=True, use_uid=True )
+            self._client = IMAPClient( credentials._host, ssl=True, use_uid=True )
         except (IMAPClient.Error, socket.error) as err:
-            logging.critical(f"Cannot connect to IMAP server {credentials.host}: {err}")
+            logging.critical(f"Cannot connect to IMAP server {credentials._host}: {err}")
             return
 
         try:
-            self._client.login( credentials.user, credentials.password )
+            self._client.login( credentials._user, credentials._password )
         except (IMAPClient.Error, socket.error) as err:
             logging.critical(f"Cannot login to IMAP server: {err}")
             self._client = None
@@ -190,7 +206,7 @@ class ImapReader:
             logging.error(
                     f"Cannot search messages in folder {self._folder}: {err}")
             return []
-        
+                
         return messages
 
     # Loads a message in current folder. Returns an array of Flags, and RFC822
@@ -215,6 +231,6 @@ class ImapReader:
         try:
             self._client.logout()
         except (IMAPClient.Error, socket.error) as err:
-            logging.error( f"Exception cought when logging out from IMAP server: {err}")
+            logging.error( f"Exception caught when logging out from IMAP server: {err}")
 
         self._client = None

@@ -79,6 +79,9 @@ class Imap2GMailProcessor:
         for folder in folders:
             self._folderqueue.put( folder )
 
+        self._messagecache.setFolders( folders )
+        self._initialmessagecache.setFolders( folders )
+
         threads = []
         for threadidx in range(self._nrthreads):
             thread = threading.Thread(target=discoverFolderThreadFunction,
@@ -142,24 +145,24 @@ class Imap2GMailProcessor:
 
             messageidx = self._nrmessages - self._messagequeue.qsize()
 
-            folderdisplayname = message.folder.replace(".","/")
+            folderdisplayname = message._folder.replace(".","/")
 
             if self._initialmessagecache.contains( message )==True:
-                logging.info( f"Skipping message {messageidx} of {self._nrmessages} (UID: {message.id} in folder {folderdisplayname})")
+                logging.info( f"Thread {threadidx}: Skipping message {messageidx} of {self._nrmessages} (UID: {message._id} in folder {folderdisplayname})")
                 continue
 
-            if reader.setCurrentFolder( message.folder )==False:
+            if reader.setCurrentFolder( message._folder )==False:
                 continue
 
-            logging.info(  f"Processing message {messageidx} of {self._nrmessages} (UID: {message.id} in folder {folderdisplayname})")
-            imapmessage = reader.loadMessage( message.id )
+            logging.info(  f"Thread {threadidx}: Processing message {messageidx} of {self._nrmessages} (UID: {message._id} in folder {folderdisplayname})")
+            imapmessage = reader.loadMessage( message._id )
 
             if imapmessage==None:
-                logging.error(f"Cannot fetch message UID: {message.id}) in folder {folderdisplayname}")
+                logging.error(f"Thread {threadidx}: Cannot fetch message UID: {message._id}) in folder {folderdisplayname}")
                 continue
 
-            if self._gmailclient.importImapMessage( imapmessage, message.folder )!=False:
-                self._messagecache.list.append( message )
+            if self._gmailclient.importImapMessage( imapmessage, message._folder )!=False:
+                self._messagecache._foldersidslist[message._folder].append( message._id )
                 if threadidx==0 and self._cachefile:
                     self._messagecache.writeJSonFile( self._cachefile )
 

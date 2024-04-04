@@ -118,9 +118,9 @@ def imap2gmail():
             parser.print_help()
             return False
 
-        imapcredentials.host = args.imap_host
-        imapcredentials.user = args.imap_user
-        imapcredentials.password = args.imap_password
+        imapcredentials._host = args.imap_host
+        imapcredentials._user = args.imap_user
+        imapcredentials._password = args.imap_password
 
 
     if imapcredentials.isOK()==False:

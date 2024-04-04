@@ -24,33 +24,34 @@ SCOPES = ['https://www.googleapis.com/auth/gmail.modify']
 
 MAX_CALLS_PER_SECOND=8
 ONE_SECOND = 1
+INBOX = 'INBOX'
 
 # Representation of an GMail label, and its IMAP folder source
 
 class GMailLabel:
-    __slots__ = 'name', 'IMAPfolder', 'GMailID'
+    __slots__ = '_name', '_IMAPfolder', '_GMailID'
 
     def __init__(self, name, folder, gmailid):
-        self.name = name
-        self.IMAPfolder = folder
-        self.GMailID = gmailid
+        self._name = name
+        self._IMAPfolder = folder
+        self._GMailID = gmailid
 
 # Collection of GMailLabels. 
 
 class GMailLabels:
-    __slots__ = 'labels'
+    __slots__ = '_labels'
     def __init__(self):
-        self.labels = []
+        self._labels = []
 
     # Find the corresponding label for an IMAP folder. Labels that are read from
     # GMail does not know their (original) IMAP folder. It is assumed that their
     # display name matches the folder name.
 
     def findLabelForImapFolder(self,imapfolder):
-        for label in self.labels:
-            if label.IMAPfolder ==imapfolder:
+        for label in self._labels:
+            if label._IMAPfolder ==imapfolder:
                 return label
-            if label.name == imapfolder:
+            if label._name == imapfolder:
                 return label
 
         return None
@@ -60,7 +61,7 @@ class GMailLabels:
 class GMailImapImporter:
     __slots__ = '_service', '_labels', '_unreadlabel', \
                 '_starredlabel', '_junklabel', '_draftlabel', \
-                 '_trashlabel', '_creds'
+                 '_trashlabel', '_inboxlabel', '_creds'
     TOKENFILE = 'gmail_token.json'
 
 
@@ -108,6 +109,7 @@ class GMailImapImporter:
         self._starredlabel = None
         self._junklabel = None
         self._trashlabel = None
+        self._inboxlabel = None
         
         for label in labels:
             imapfolder = ''
@@ -116,8 +118,8 @@ class GMailImapImporter:
                 imapfolder = 'Sent'
             elif labelid=='DRAFT':
                 imapfolder = 'Drafts'
-            elif labelid=='INBOX':
-                imapfolder = 'INBOX'
+            elif labelid==INBOX:
+                imapfolder = INBOX
             elif labelid=='SPAM':
                 imapfolder = 'Junk'
             elif labelid=='TRASH':
@@ -134,9 +136,11 @@ class GMailImapImporter:
                 self._trashlabel = newlabel
             elif labelid=="DRAFT":
                 self._draftlabel = newlabel
+            elif labelid==INBOX:
+                self._inboxlabel = newlabel
 
 
-            self._labels.labels.append( newlabel )
+            self._labels._labels.append( newlabel )
 
         return True
 
@@ -168,7 +172,7 @@ class GMailImapImporter:
                 logging.error(f"An error occurred while creating label \"{folder}\": {error}")
                 return False
 
-            self._labels.labels.append( GMailLabel( folder, folder, result['id']))
+            self._labels._labels.append( GMailLabel( folder, folder, result['id']))
 
         return True
 
@@ -190,7 +194,7 @@ class GMailImapImporter:
             return False
 
         # Drafts are handled separately with a separate drafts.create call.
-        if folderlabel.GMailID==self._draftlabel.GMailID:
+        if folderlabel._GMailID==self._draftlabel._GMailID:
             message_body = {'raw': urlsafe_b64encode(message[b'RFC822']).decode() }
             message = {'message': message_body}
             try:
@@ -205,14 +209,14 @@ class GMailImapImporter:
 
             return True
 
-        if folderlabel!=None:
-            messagelabels.append( folderlabel.GMailID )
+
 
         # Search for flagged and seen flags, and set labels accordingly
         seen = False
         flagged = False
-        junk = False
-        deleted = False
+        junk = folderlabel._GMailID==self._junklabel._GMailID
+        deleted = folderlabel._GMailID==self._trashlabel._GMailID
+        inbox = folderlabel._GMailID==self._inboxlabel._GMailID
 
         for flag in flags:
             if flag==b'\\Seen':
@@ -226,19 +230,25 @@ class GMailImapImporter:
             elif flag==b'\\Deleted':
                 deleted = True
             
+
+        # INBOX, TRASH and SPAM are mutually exclusive
+        if deleted:
+            messagelabels.append( self._trashlabel._GMailID )
+        elif junk:
+            messagelabels.append( self._junklabel._GMailID )
+        elif inbox:
+            messagelabels.append( self._inboxlabel._GMailID )
+
+        #Set any label not INBOX, TRASH, SPAM
+        if folderlabel._GMailID!=self._inboxlabel._GMailID and folderlabel._GMailID!=self._trashlabel._GMailID and folderlabel._GMailID!=self._junklabel._GMailID:
+            messagelabels.append( folderlabel._GMailID )
+            
+
         if seen==False:
-            messagelabels.append( self._unreadlabel.GMailID )
+            messagelabels.append( self._unreadlabel._GMailID )
 
         if flagged==True:
-            messagelabels.append( self._starredlabel.GMailID )
-        
-        #Don't apply junk/trash if it is already in trash.
-        if folderlabel.GMailID!=self._trashlabel.GMailID:
-            if junk==True:
-                messagelabels.append( self._junklabel.GMailID )
-
-            if deleted==True:
-                messagelabels.append( self._trashlabel.GMailID )
+            messagelabels.append( self._starredlabel._GMailID )
      
         message_obj = {'raw': urlsafe_b64encode(message[b'RFC822']).decode(),
                        'labelIds': messagelabels }
