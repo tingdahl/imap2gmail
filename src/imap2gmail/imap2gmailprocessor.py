@@ -29,8 +29,8 @@ class Imap2GMailProcessor:
                 '_folderqueue', '_messagequeue', '_gmailclient', '_imapreaders', \
                 '_initialmessagecache', '_messagecache', '_cachefile', '_nrmessages'
 
-    def __init__(self, imapcredentials, googlecredentials, nrthreads,
-                 startdate, beforedate,includedeleted, reauthenticiate, cachefile):
+    def __init__(self, imapcredentials, gmailclient, nrthreads,
+                 startdate, beforedate,includedeleted, cachefile):
         self._imapcredentials = imapcredentials
         self._nrthreads = nrthreads
         self._startdate = startdate
@@ -40,7 +40,7 @@ class Imap2GMailProcessor:
         self._folderqueue = queue.SimpleQueue()
         self._messagequeue = queue.SimpleQueue()
 
-        self._gmailclient = GMailImapImporter( googlecredentials, reauthenticiate )
+        self._gmailclient = gmailclient
         if self._gmailclient.isOK()==False:
             return
 

@@ -65,8 +65,18 @@ class GMailImapImporter:
     TOKENFILE = 'gmail_token.json'
 
 
-    def __init__(self,credentialsfile,reauthenticate):
+    def __init__(self):
         self._service = None
+
+    def logout(self):
+        try:
+            os.remove(self.TOKENFILE)
+        except OSError:
+            pass
+
+
+
+    def login(self,credentialsfile,reauthenticate:bool):
         
         if self._loadCredentials( credentialsfile,reauthenticate )==False:
             return
@@ -77,11 +87,18 @@ class GMailImapImporter:
             # TODO(developer) - Handle errors from gmail API.
             logging.error(f'An error occurred: {error}')
 
-    # Load the current labels in GMail and try to map them to 
-    # known system folders (inbox, sent, drafts, ...) and states (read, starred, ...)
+        if self._refreshToken()==False:
+            logging.critical("Refresh token failed.")
+            return False
+
+        return self.isOK()
+
 
     def isOK(self):
         return self._service!=None
+
+    # Load the current labels in GMail and try to map them to 
+    # known system folders (inbox, sent, drafts, ...) and states (read, starred, ...)
 
     def loadLabels(self):
         logging.info("Reading current GMail labels.")
@@ -268,7 +285,7 @@ class GMailImapImporter:
 
         return True
 
-    # If a token doe snot exists, use credentials file to ask user for permission 
+    # If a token does not exists, use credentials file to ask user for permission 
     # and get a token. 
 
     def _loadCredentials(self,credentialsfile,reauthenticate):

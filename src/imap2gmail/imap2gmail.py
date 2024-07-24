@@ -12,6 +12,7 @@ from .imapreader import ImapCredentials
 import logging
 import argparse
 from .imap2gmailprocessor import Imap2GMailProcessor
+from .gmailimapimporter import GMailImapImporter
 
 CURRENT_DIR = './'
 
@@ -75,13 +76,21 @@ def imap2gmail():
     parser.add_argument("--include_deleted", action='store_const', const=True,
                         help="Should messaged marked as deleted be included.")
 
-    parser.add_argument("--reauthenticate", action='store_const', const=False,
+    # Login/logout
+    parser.add_argument("--login", action='store_const', const=True, help="Log in to GMail and store the credentials.")
+    parser.add_argument("--logout", action='store_const', const=True, help="Remove any GMail credentials")
+    parser.add_argument("--reauthenticate", action='store_const', const=True,
                         help="Force new authentification by Google.")
 
+    # Date limits
     parser.add_argument('--start_date',type=lambda s: datetime.datetime.strptime(s, '%Y-%m-%d'),)
     parser.add_argument('--before_date',type=lambda s: datetime.datetime.strptime(s, '%Y-%m-%d'))
 
-    args = parser.parse_args()
+    try:
+        args = parser.parse_args()
+    except:
+        parser.print_help()
+        return False
 
     # Check general parsing stuff
     if args.google_credentials == None:
@@ -106,6 +115,24 @@ def imap2gmail():
                       "directory, or a subdirectory thereof. All files must also be in "
                       "the users home directory, or a subdirectory thereof.")
         return False       
+
+    if args.login and args.logout:
+        logging.error(f"Both login and logout given. Select one ore the other")
+        return False
+
+    gmailclient = GMailImapImporter()
+
+    if args.logout:
+        gmailclient.logout()
+        return True
+    
+    if gmailclient.login(args.google_credentials, args.reauthenticate!=None)==False:
+        logging.error("Cannot login to GMail")
+        return False
+    
+    if args.login:
+        logging.info("Logged into GMail")
+        return True
 
     #Parse imap creds
     imapcredentials = ImapCredentials()
@@ -134,7 +161,7 @@ def imap2gmail():
     nrthreads = min(multiprocessing.cpu_count()*2,maxnrthreads)
     nrthreads = max(nrthreads,1)
 
-    processor = Imap2GMailProcessor( imapcredentials, args.google_credentials, nrthreads,
+    processor = Imap2GMailProcessor( imapcredentials, gmailclient , nrthreads,
                     args.start_date, args.before_date,args.include_deleted,args.reauthenticate!=None,
                     args.cache_file )
 
