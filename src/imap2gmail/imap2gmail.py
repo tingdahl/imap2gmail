@@ -162,7 +162,7 @@ def imap2gmail():
     nrthreads = max(nrthreads,1)
 
     processor = Imap2GMailProcessor( imapcredentials, gmailclient , nrthreads,
-                    args.start_date, args.before_date,args.include_deleted,args.reauthenticate!=None,
+                    args.start_date, args.before_date,args.include_deleted,
                     args.cache_file )
 
     if processor.isOK()==False:
