@@ -335,5 +335,6 @@ class GMailImapImporter:
                 logging.error(f"Cannot write file {self.TOKENFILE}: {err}")
 
     # Replace the '.' with a forward slash '/' in folder name
+    # Remove whitespaces at the end or beginning
     def _cleanFolderName(folder):
-        return folder.replace(".","/")
+        return folder.replace(".","/").strip()

@@ -6,7 +6,6 @@
 import queue
 import threading
 from .imapreader import ImapMessageID,ImapMessageIDList,ImapReader
-from .gmailimapimporter import GMailImapImporter
 import logging
 
 # Reads data from an IMAP server and imports them into GMail. IMAP folders
