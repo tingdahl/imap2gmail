@@ -7,6 +7,11 @@ testenv
 build
 *.snap
 
+#Venv
+lib
+lib64
+bin
+
 # Common debug files
 cache_file.json
 gmail_token.json
