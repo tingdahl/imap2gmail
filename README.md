@@ -18,9 +18,9 @@ REST API's.
   
      When these credentials are created, point to it with the --google_credentials argument.
   5. To avoid transferring new emails every time, specify the --cache_file. When specified,
-     a list of transferred messages will be stored locally. Note, changes to these messages (such as new edits of drafts, changes to flags (read, starred, etc)) will not be updated at subsequal runs.
+     a list of transferred messages will be stored locally. Note, changes to these messages (such as new edits of drafts, changes to flags (read, starred, etc)) will not be updated at subsequential runs.
   6. It is recommended that large inboxes are migrated in chunks based on age. Start by  
-     specifying the --before_date YYYY-MM-DD, and then run it again with a later date.
+     specifying the --start_date YYYY-MM-DD, and then run it again with a later date.
   7. At first run, the browser will start, and ask you for permission to run the application. The
      resulting token will be stored in a local file (gmail_token.json).
 
