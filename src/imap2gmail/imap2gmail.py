@@ -68,6 +68,7 @@ def imap2gmail():
 
     # Cache file
     parser.add_argument("--cache_file",
+                        default="./imap2gmail_cache.json",
                         help="File where a list of completed e-mails "
                         "will be kept")
 
