@@ -51,9 +51,9 @@ class GMailLabels:
 
     def findLabelForImapFolder(self, imapfolder):
         for label in self._labels:
-            if label._IMAPfolder == imapfolder:
+            if label._IMAPfolder.lower() == imapfolder.lower():
                 return label
-            if label._name == imapfolder:
+            if label._name.lower() == imapfolder.lower():
                 return label
 
         return None
