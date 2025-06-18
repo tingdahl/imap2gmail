@@ -160,10 +160,13 @@ class Imap2GMailProcessor:
                 logging.error(f"Thread {threadidx}: Cannot fetch message UID: {message._id}) in folder {folderdisplayname}")
                 continue
 
-            if self._gmailclient.importImapMessage( imapmessage, message._folder )!=False:
+            res = self._gmailclient.importImapMessage( imapmessage, message._folder )
+            if res is None:
                 self._messagecache._foldersidslist[message._folder].append( message._id )
                 if threadidx==0 and self._cachefile:
                     self._messagecache.writeJSonFile( self._cachefile )
+            else:
+                logging.error(f"Message UID: {message._id} in folder {folderdisplayname} not imported. Error: {res}")
 
         reader.logout()
 

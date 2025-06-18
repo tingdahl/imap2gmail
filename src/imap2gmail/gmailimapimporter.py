@@ -202,10 +202,11 @@ class GMailImapImporter:
 
     # Add message to Gmail, with the apropriate labels based on flags and
     # folder. The message is expected to have the FLAGS and RFC822 parts.
+    # Return an error messag or None (success)
 
     @sleep_and_retry
     @limits(calls=MAX_CALLS_PER_SECOND, period=ONE_SECOND)
-    def importImapMessage(self, message, folder):
+    def importImapMessage(self, message, folder) -> str | None:
         folder = GMailImapImporter._cleanFolderName(folder)
         flags = message[b'FLAGS']
         messagelabels = []
@@ -214,8 +215,7 @@ class GMailImapImporter:
         folderlabel = self._labels.findLabelForImapFolder(folder)
 
         if self._refreshToken() is False:
-            logging.critical("Refresh token failed.")
-            return False
+            return "Refresh token failed."
 
         # Drafts are handled separately with a separate drafts.create call.
         if folderlabel._GMailID == self._draftlabel._GMailID:
@@ -230,10 +230,9 @@ class GMailImapImporter:
                     body=message,
                     ).execute(num_retries=2, http=http)
             except Exception as error:
-                logging.error(f"Could not upload draft to GMail: {error}")
-                return False
+                return f"Could not upload draft to GMail: {error}"
 
-            return True
+            return None
 
         # Search for flagged and seen flags, and set labels accordingly
         seen = False
@@ -288,10 +287,9 @@ class GMailImapImporter:
                     neverMarkSpam=True,
                     ).execute(num_retries=2, http=http)
         except Exception as error:
-            logging.error(f"Could not upload message to GMail: {error}")
-            return False
+            return f"Could not upload message to GMail: {error}"
 
-        return True
+        return None
 
     # If a token does not exists, use credentials file to ask user for
     # permission and get a token.
