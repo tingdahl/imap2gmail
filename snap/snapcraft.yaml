@@ -13,8 +13,6 @@ parts:
   imap2gmail:
     plugin: python
     source: https://github.com/tingdahl/imap2gmail.git
-    stage-packages:
-      - python-six
 
 apps:
   imap2gmail:
