@@ -13,6 +13,10 @@ parts:
   imap2gmail:
     plugin: python
     source: https://github.com/tingdahl/imap2gmail.git
+    override-build: |
+      pip install pytest pytest-cov
+      pytest ${CRAFT_PART_SRC}/tests/ -v
+      craftctl default
 
 apps:
   imap2gmail:

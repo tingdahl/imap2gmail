@@ -6,6 +6,8 @@ imap2gmail.egg-info
 testenv
 build
 *.snap
+.coverage
+.pytest_cache
 
 #Venv
 lib
