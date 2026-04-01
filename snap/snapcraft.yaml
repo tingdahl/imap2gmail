@@ -13,6 +13,8 @@ parts:
   imap2gmail:
     plugin: python
     source: https://github.com/tingdahl/imap2gmail.git
+    build-packages:
+      - libffi-dev
     override-build: |
       craftctl default
       ${CRAFT_PART_INSTALL}/bin/python3 -m pip install pytest pytest-cov
