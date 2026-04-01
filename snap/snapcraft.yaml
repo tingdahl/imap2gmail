@@ -9,6 +9,13 @@ confinement: strict
 base: core24
 grade: stable
 
+platforms:
+  amd64:
+  arm64:
+  armhf:
+  ppc64el:
+  s390x:
+
 parts:
   imap2gmail:
     plugin: python
