@@ -1,5 +1,5 @@
 name: imap2gmail
-version: '1.0.17'
+version: '1.0.16'
 summary: Copy e-mails from IMAP to GMail
 license: MIT
 website: https://github.com/tingdahl/imap2gmail
@@ -14,9 +14,9 @@ parts:
     plugin: python
     source: https://github.com/tingdahl/imap2gmail.git
     override-build: |
-      pip install pytest pytest-cov
-      pytest ${CRAFT_PART_SRC}/tests/ -v
       craftctl default
+      ${CRAFT_PART_INSTALL}/bin/python3 -m pip install pytest pytest-cov
+      ${CRAFT_PART_INSTALL}/bin/python3 -m pytest ${CRAFT_PART_SRC}/tests/ -v
 
 apps:
   imap2gmail:
