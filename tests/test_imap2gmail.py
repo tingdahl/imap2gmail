@@ -19,6 +19,7 @@ class TestCheckFileAccess:
         f = str(tmp_path / "missing.txt")
         assert checkFileAccess(f, True) is False
 
+    @pytest.mark.skipif(os.getuid() == 0, reason="root bypasses file permissions")
     def test_read_unreadable_file(self, tmp_path):
         f = tmp_path / "noperm.txt"
         f.write_text("hello")
@@ -33,6 +34,7 @@ class TestCheckFileAccess:
         f.write_text("hello")
         assert checkFileAccess(str(f), False) is True
 
+    @pytest.mark.skipif(os.getuid() == 0, reason="root bypasses file permissions")
     def test_write_existing_readonly_file(self, tmp_path):
         f = tmp_path / "readonly.txt"
         f.write_text("hello")
@@ -46,6 +48,7 @@ class TestCheckFileAccess:
         f = str(tmp_path / "newfile.txt")
         assert checkFileAccess(f, False) is True
 
+    @pytest.mark.skipif(os.getuid() == 0, reason="root bypasses file permissions")
     def test_write_new_file_in_readonly_dir(self, tmp_path):
         readonly_dir = tmp_path / "nowrite"
         readonly_dir.mkdir()
