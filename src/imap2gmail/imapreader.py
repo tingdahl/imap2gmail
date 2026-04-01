@@ -50,16 +50,13 @@ class ImapMessageIDList:
     # Load list from json file
     def loadJsonFile(self,filename):
         if os.path.exists( filename ):
-            file =  open(filename, 'rb')
-
             importlist = []
             try:
-                importlist = json.load( file )
-            except:
+                with open(filename, 'rb') as file:
+                    importlist = json.load( file )
+            except (json.JSONDecodeError, OSError):
                 logging.error("Could not read cache file.")
                 self._foldersidslist = {}
-
-            file.close()
 
             for id in importlist:
                 foldername = id['folder']
@@ -72,34 +69,33 @@ class ImapMessageIDList:
 
     # Write list to json file
     def writeJSonFile(self,filename):
-        file =  open(filename, 'w')
-
         exportlist = []
         
         for folder in self._foldersidslist:
             for id in self._foldersidslist[folder]:
                 exportlist.append( ImapMessageID( folder, id ))
 
-
         json_string = json.dumps([ob.json_serialize() for ob in exportlist])
         logging.info(f"Saving cache file {filename}.")
-        file.write( json_string )
-
-        file.close()
+        with open(filename, 'w') as file:
+            file.write( json_string )
 
 # Holds host, user, password for an IMAP server
 class ImapCredentials:
     __slots__ = '_host', '_user', '_password'
 
+    def __init__(self):
+        self._host = ''
+        self._user = ''
+        self._password = ''
+
     def loadJsonFile(self, filename):
         try:
-            f = open(filename,)
+            with open(filename) as f:
+                input = json.load(f)
         except OSError as err:
             logging.critical(f"Cannot open file {filename}: {err}")
             return False
-
-        input = json.load(f)
-        f.close()
 
         self._host = input["host"]
         self._password = input["password"]

@@ -3,6 +3,7 @@
 # Licenced under the MIT licence, see license.md
 # 
 
+import copy
 import queue
 import threading
 from .imapreader import ImapMessageID,ImapMessageIDList,ImapReader
@@ -26,7 +27,8 @@ class Imap2GMailProcessor:
     __slots__ = '_imapcredentials', '_nrthreads', \
                 '_startdate', '_beforedate', '_includedeleted', \
                 '_folderqueue', '_messagequeue', '_gmailclient', '_imapreaders', \
-                '_initialmessagecache', '_messagecache', '_cachefile', '_nrmessages'
+                '_initialmessagecache', '_messagecache', '_cachefile', '_nrmessages', \
+                '_cachelock'
 
     def __init__(self, imapcredentials, gmailclient, nrthreads,
                  startdate, beforedate,includedeleted, cachefile):
@@ -58,9 +60,9 @@ class Imap2GMailProcessor:
         self._initialmessagecache = ImapMessageIDList()
         self._initialmessagecache.loadJsonFile( cachefile )
 
-        self._messagecache = ImapMessageIDList()
-        self._messagecache.loadJsonFile( cachefile )
+        self._messagecache = copy.deepcopy(self._initialmessagecache)
         self._cachefile = cachefile
+        self._cachelock = threading.Lock()
 
     def isOK(self):
         return self._gmailclient.isOK() and len(self._imapreaders)>0
@@ -106,7 +108,7 @@ class Imap2GMailProcessor:
         while True:
             try:
                 folder = self._folderqueue.get_nowait()
-            except:
+            except queue.Empty:
                 break
 
             if reader.setCurrentFolder( folder ):
@@ -139,7 +141,7 @@ class Imap2GMailProcessor:
         while True:
             try:
                 message = self._messagequeue.get_nowait()
-            except:
+            except queue.Empty:
                 break
 
             messageidx = self._nrmessages - self._messagequeue.qsize()
@@ -162,9 +164,10 @@ class Imap2GMailProcessor:
 
             res = self._gmailclient.importImapMessage( imapmessage, message._folder )
             if res is None:
-                self._messagecache._foldersidslist[message._folder].append( message._id )
-                if threadidx==0 and self._cachefile:
-                    self._messagecache.writeJSonFile( self._cachefile )
+                with self._cachelock:
+                    self._messagecache._foldersidslist[message._folder].append( message._id )
+                    if threadidx==0 and self._cachefile:
+                        self._messagecache.writeJSonFile( self._cachefile )
             else:
                 logging.error(f"Message UID: {message._id} in folder {folderdisplayname} not imported. Error: {res}")
 

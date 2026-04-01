@@ -58,13 +58,7 @@ def imap2gmail():
                         required=True)
 
     # IMAP server arguments
-    imapgroup = parser.add_mutually_exclusive_group()
-    imapgroup.add_argument("--imap_credentials_file")
-    imapcligroup = imapgroup.add_argument_group()
-
-    imapcligroup.add_argument("--imap_host")
-    imapcligroup.add_argument("--imap_user")
-    imapcligroup.add_argument("--imap_password")
+    parser.add_argument("--imap_credentials_file")
 
     # Cache file
     parser.add_argument("--cache_file",
@@ -74,6 +68,7 @@ def imap2gmail():
 
     # MT
     parser.add_argument("--max_threads",
+                        type=int,
                         help="Maximum number of threads. "
                         "Default is 16 threads.")
 
@@ -151,17 +146,9 @@ def imap2gmail():
     if args.imap_credentials_file:
         imapcredentials.loadJsonFile(args.imap_credentials_file)
     else:
-        if args.imap_host is None or \
-                args.imap_user is None or \
-                args.imap_password is None:
-            print("You most specify either imap_credentials file or imap_host,"
-                  " imap_user, and imap_password")
-            parser.print_help()
-            return False
-
-        imapcredentials._host = args.imap_host
-        imapcredentials._user = args.imap_user
-        imapcredentials._password = args.imap_password
+        print("You must specify --imap_credentials_file")
+        parser.print_help()
+        return False
 
     if imapcredentials.isOK() is False:
         logging.error("IMAP Credentials not read")
@@ -169,7 +156,7 @@ def imap2gmail():
 
     maxnrthreads = 16
     if args.max_threads:
-        maxnrthreads = int(args.max_threads)
+        maxnrthreads = args.max_threads
 
     nrthreads = min(multiprocessing.cpu_count()*2, maxnrthreads)
     nrthreads = max(nrthreads, 1)

@@ -21,7 +21,8 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
 # If modifying these scopes, delete the file token.json.
-SCOPES = ['https://www.googleapis.com/auth/gmail.modify']
+SCOPES = ['https://www.googleapis.com/auth/gmail.insert',
+          'https://www.googleapis.com/auth/gmail.labels']
 
 MAX_CALLS_PER_SECOND = 8
 ONE_SECOND = 1
@@ -338,11 +339,13 @@ class GMailImapImporter:
 
     def _writeToken(self):
 
-        with open(self.TOKENFILE, 'w') as token:
-            try:
+        try:
+            fd = os.open(self.TOKENFILE,
+                         os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+            with os.fdopen(fd, 'w') as token:
                 token.write(self._creds.to_json())
-            except OSError as err:
-                logging.error(f"Cannot write file {self.TOKENFILE}: {err}")
+        except OSError as err:
+            logging.error(f"Cannot write file {self.TOKENFILE}: {err}")
 
     # Replace the '.' with a forward slash '/' in folder name
     # Remove whitespaces at the end or beginning

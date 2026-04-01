@@ -6,6 +6,8 @@ imap2gmail.egg-info
 testenv
 build
 *.snap
+.coverage
+.pytest_cache
 
 #Venv
 lib
@@ -14,6 +16,7 @@ bin
 
 # Common debug files
 cache_file.json
+imap2gmail_cache.json
 gmail_token.json
 gmail_credentials.json
 imap_credentials.json
